@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Streak Studio - Desktop Version</title>
+    <title>Streak Studio - Refined Desktop</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap');
@@ -21,15 +21,13 @@
             height: 100vh;
         }
 
-        /* Ajuste para Desktop: Vira uma linha (Lado a Lado) */
         @media (min-width: 1024px) {
             body { flex-direction: row; }
             .main-canvas { flex: 1; height: 100vh; position: relative; }
             .sidebar { 
-                width: 400px; 
+                width: 380px; 
                 height: 100vh; 
                 border-left: 1px solid rgba(255,255,255,0.1); 
-                border-top: none;
                 background: #000;
             }
         }
@@ -59,24 +57,27 @@
         .mirror-btn { background: #3b82f6; top: -15px; left: -15px; }
         .draggable-acc.selected .control-btn { display: flex; }
         
-        .sidebar { position: relative; z-index: 100; background: #000; border-top: 1px solid rgba(255,255,255,0.1); display: flex; flex-direction: column; flex: 1; }
+        .sidebar { position: relative; z-index: 100; background: #000; border-top: 1px solid rgba(255,255,255,0.1); display: flex; flex-direction: column; }
         
         #main-menu { border-bottom: 2px solid rgba(255,255,255,0.05); display: flex; overflow-x: auto; scrollbar-width: none; }
         .tab-btn { padding: 12px 20px; font-weight: 700; font-size: 13px; color: #666; text-align: center; position: relative; white-space: nowrap; }
         .tab-btn.active { color: white; }
         .tab-btn.active::after { content: ''; position: absolute; bottom: -2px; left: 20%; width: 60%; height: 3px; background: white; border-radius: 10px; }
         
-        .submenu { display: flex; gap: 10px; padding: 10px 16px; background: #000; overflow-x: auto; min-height: 48px; }
-        .sub-tab-btn { font-size: 11px; font-weight: 800; text-transform: uppercase; color: #fff; padding: 6px 16px; border-radius: 20px; background: #1A1A1A; border: 1px solid transparent; white-space: nowrap; }
+        .submenu { display: flex; gap: 8px; padding: 10px 16px; background: #000; overflow-x: auto; min-height: 48px; }
+        .sub-tab-btn { font-size: 10px; font-weight: 800; text-transform: uppercase; color: #fff; padding: 5px 12px; border-radius: 20px; background: #1A1A1A; border: 1px solid transparent; white-space: nowrap; }
         .sub-tab-btn.active { background: #333; border-color: #555; }
 
         .content-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; padding: 16px; flex: 1; overflow-y: auto; align-content: start; }
         @media (max-width: 1023px) { .content-grid { grid-template-columns: repeat(3, 1fr); height: 260px; } }
 
-        .item-card { background: #1A1A1A; border-radius: 12px; width: 100%; aspect-ratio: 1/1; display: flex; align-items: center; justify-content: center; border: 2px solid transparent; cursor: pointer; }
+        .item-card-wrapper { display: flex; flex-direction: column; gap: 6px; align-items: center; text-align: center; }
+        .item-card { background: #1A1A1A; border-radius: 12px; width: 100%; aspect-ratio: 1/1; display: flex; align-items: center; justify-content: center; border: 2px solid transparent; cursor: pointer; padding: 10px; }
         .item-card.selected { border-color: white; background: rgba(255,255,255,0.1); }
+        .item-name { font-size: 10px; font-weight: 800; color: white; width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .item-author { font-size: 8px; font-weight: 500; color: #666; text-transform: uppercase; letter-spacing: 0.5px; }
         
-        #reset-pos-btn { display: none; position: absolute; top: 10px; left: 10px; background: #ff4444; color: white; font-size: 10px; font-weight: 800; padding: 8px 12px; border-radius: 10px; z-index: 200; }
+        #reset-pos-btn { display: none; margin-top: 8px; background: #ff4444; color: white; font-size: 9px; font-weight: 900; padding: 6px 12px; border-radius: 8px; text-transform: uppercase; }
         #streak-input { background: transparent; color: white; border: none; font-weight: bold; width: 100%; text-align: center; outline: none; }
     </style>
 </head>
@@ -88,11 +89,11 @@
             <div class="text-right flex flex-col items-end">
                 <span id="streak-count" class="text-4xl font-black italic leading-none">3</span>
                 <span class="text-[9px] font-bold uppercase tracking-wider text-gray-400 mt-1">Dias de sequência</span>
+                <button id="reset-pos-btn" onclick="resetAccPositions()">Resetar 🛠️</button>
             </div>
         </header>
 
         <div class="character-container">
-            <button id="reset-pos-btn" onclick="resetAccPositions()">Resetar 🛠️</button>
             <div class="character-wrapper" id="interaction-zone">
                 <img id="char-img" src="fogo_amarelo.png" class="character-img">
             </div>
@@ -176,6 +177,9 @@
                 const slot = item.sub || item.categoria;
                 const isSelected = (currentTab === 'pose') ? (currentPoseImg === item.imagem) : (activeAccessories[slot] === item.imagem);
                 
+                const wrapper = document.createElement('div');
+                wrapper.className = 'item-card-wrapper';
+
                 const card = document.createElement('div');
                 card.className = `item-card ${isSelected ? 'selected' : ''}`;
                 card.onclick = () => {
@@ -186,8 +190,15 @@
                         toggleAcc(slot, item.imagem);
                     }
                 };
-                card.innerHTML = `<img src="${item.imagem}" class="w-20 h-20 object-contain">`;
-                grid.appendChild(card);
+                card.innerHTML = `<img src="${item.imagem}" class="w-full h-full object-contain">`;
+                
+                wrapper.appendChild(card);
+                wrapper.innerHTML += `
+                    <div class="item-name">${item.nome}</div>
+                    <div class="item-author">${item.autor || 'BY TECH'}</div>
+                `;
+
+                grid.appendChild(wrapper);
             });
         }
 
@@ -239,7 +250,6 @@
             img.style.transform = `scaleX(${state.flip})`;
         }
 
-        // --- GESTOS ---
         let start = { x: 0, y: 0, dist: 0, angle: 0, isMoving: false, selectedTarget: null };
         const zone = document.getElementById('interaction-zone');
 
