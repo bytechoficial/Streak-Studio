@@ -258,21 +258,24 @@
         let start = { x: 0, y: 0, dist: 0, angle: 0, isMoving: false, selectedTarget: null };
         const zone = document.getElementById('interaction-zone');
 
-        // --- CONTROLE DE MOUSE E TOUCHPAD ---
+        // --- CORREÇÃO DE ROTAÇÃO E ZOOM PARA TOUCHPAD ---
         zone.addEventListener('wheel', (e) => {
             if (!start.selectedTarget) return;
             e.preventDefault();
+            
             let state = (start.selectedTarget === 'char-body') ? charState : accStates[start.selectedTarget];
             let element = (start.selectedTarget === 'char-body') ? zone : document.getElementById(start.selectedTarget + '-container');
 
             if (e.shiftKey) {
-                // Rotacionar com Shift + Scroll
-                state.r += e.deltaY * 0.2;
+                // Rotaciona: a força do scroll (deltaY) define a rotação
+                state.r += e.deltaY * 0.5; 
             } else {
-                // Aumentar/Diminuir com Scroll
-                const factor = e.deltaY > 0 ? 0.95 : 1.05;
-                state.s *= factor;
+                // Zoom: Scroll para cima aumenta, para baixo diminui
+                const delta = e.deltaY > 0 ? 0.9 : 1.1;
+                state.s *= delta;
             }
+            
+            // Aplica a transformação
             element.style.transform = `translate(${state.x}px, ${state.y}px) scale(${state.s}) rotate(${state.r}deg)`;
         }, { passive: false });
 
