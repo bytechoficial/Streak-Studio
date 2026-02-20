@@ -60,24 +60,26 @@
         .sidebar { position: relative; z-index: 100; background: #000; border-top: 1px solid rgba(255,255,255,0.1); display: flex; flex-direction: column; }
         
         #main-menu { border-bottom: 2px solid rgba(255,255,255,0.05); display: flex; overflow-x: auto; scrollbar-width: none; }
-        .tab-btn { padding: 12px 20px; font-weight: 700; font-size: 13px; color: #666; text-align: center; position: relative; white-space: nowrap; }
+        .tab-btn { padding: 12px 20px; font-weight: 700; font-size: 13px; color: #666; text-align: center; position: relative; white-space: nowrap; cursor: pointer; }
         .tab-btn.active { color: white; }
         .tab-btn.active::after { content: ''; position: absolute; bottom: -2px; left: 20%; width: 60%; height: 3px; background: white; border-radius: 10px; }
         
         .submenu { display: flex; gap: 8px; padding: 10px 16px; background: #000; overflow-x: auto; min-height: 48px; }
-        .sub-tab-btn { font-size: 10px; font-weight: 800; text-transform: uppercase; color: #fff; padding: 5px 12px; border-radius: 20px; background: #1A1A1A; border: 1px solid transparent; white-space: nowrap; }
+        .sub-tab-btn { font-size: 10px; font-weight: 800; text-transform: uppercase; color: #fff; padding: 5px 12px; border-radius: 20px; background: #1A1A1A; border: 1px solid transparent; white-space: nowrap; cursor: pointer; }
         .sub-tab-btn.active { background: #333; border-color: #555; }
 
         .content-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; padding: 16px; flex: 1; overflow-y: auto; align-content: start; }
         @media (max-width: 1023px) { .content-grid { grid-template-columns: repeat(3, 1fr); height: 260px; } }
 
-        .item-card-wrapper { display: flex; flex-direction: column; gap: 6px; align-items: center; text-align: center; }
-        .item-card { background: #1A1A1A; border-radius: 12px; width: 100%; aspect-ratio: 1/1; display: flex; align-items: center; justify-content: center; border: 2px solid transparent; cursor: pointer; padding: 10px; }
-        .item-card.selected { border-color: white; background: rgba(255,255,255,0.1); }
-        .item-name { font-size: 10px; font-weight: 800; color: white; width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .item-author { font-size: 8px; font-weight: 500; color: #666; text-transform: uppercase; letter-spacing: 0.5px; }
+        /* AJUSTE AQUI: Garante que o container inteiro receba o clique */
+        .item-card-wrapper { display: flex; flex-direction: column; gap: 6px; align-items: center; text-align: center; cursor: pointer; pointer-events: auto; }
+        .item-card { background: #1A1A1A; border-radius: 12px; width: 100%; aspect-ratio: 1/1; display: flex; align-items: center; justify-content: center; border: 2px solid transparent; padding: 10px; pointer-events: none; }
+        .item-card-wrapper:hover .item-card { background: #222; }
+        .item-card-wrapper.selected .item-card { border-color: white; background: rgba(255,255,255,0.1); }
+        .item-name { font-size: 10px; font-weight: 800; color: white; width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; pointer-events: none; }
+        .item-author { font-size: 8px; font-weight: 500; color: #666; text-transform: uppercase; letter-spacing: 0.5px; pointer-events: none; }
         
-        #reset-pos-btn { display: none; margin-top: 8px; background: #ff4444; color: white; font-size: 9px; font-weight: 900; padding: 6px 12px; border-radius: 8px; text-transform: uppercase; }
+        #reset-pos-btn { display: none; margin-top: 8px; background: #ff4444; color: white; font-size: 9px; font-weight: 900; padding: 6px 12px; border-radius: 8px; text-transform: uppercase; cursor: pointer; }
         #streak-input { background: transparent; color: white; border: none; font-weight: bold; width: 100%; text-align: center; outline: none; }
     </style>
 </head>
@@ -102,7 +104,7 @@
 
     <aside class="sidebar">
         <div class="px-5 py-6 flex gap-2 border-b border-white/10">
-            <button onclick="increaseStreak()" class="flex-1 bg-white text-black font-black py-4 rounded-xl uppercase italic text-xs hover:bg-gray-200 transition-colors">Mandar Foguinho 🔥</button>
+            <button onclick="increaseStreak()" class="flex-1 bg-white text-black font-black py-4 rounded-xl uppercase italic text-xs hover:bg-gray-200 transition-colors cursor-pointer">Mandar Foguinho 🔥</button>
             <div class="w-14 h-14 flex items-center justify-center rounded-xl bg-[#1A1A1A] text-white font-bold text-lg border border-white/5">
                 <input type="number" id="streak-input" value="3" oninput="manualStreakUpdate(this.value)">
             </div>
@@ -178,18 +180,21 @@
                 const isSelected = (currentTab === 'pose') ? (currentPoseImg === item.imagem) : (activeAccessories[slot] === item.imagem);
                 
                 const wrapper = document.createElement('div');
-                wrapper.className = 'item-card-wrapper';
-
-                const card = document.createElement('div');
-                card.className = `item-card ${isSelected ? 'selected' : ''}`;
-                card.onclick = () => {
+                wrapper.className = `item-card-wrapper ${isSelected ? 'selected' : ''}`;
+                
+                // AJUSTE: O onclick agora está no wrapper principal
+                wrapper.onclick = (e) => {
                     if (currentTab === 'pose') {
                         currentPoseImg = (currentPoseImg === item.imagem) ? null : item.imagem;
-                        updateUI(); renderGrid();
                     } else {
                         toggleAcc(slot, item.imagem);
                     }
+                    updateUI(); 
+                    renderGrid();
                 };
+
+                const card = document.createElement('div');
+                card.className = `item-card`;
                 card.innerHTML = `<img src="${item.imagem}" class="w-full h-full object-contain">`;
                 
                 wrapper.appendChild(card);
@@ -230,17 +235,19 @@
                     `;
                     document.getElementById('interaction-zone').appendChild(container);
                     accStates[slot] = { x: 0, y: 0, s: 1, r: 0, flip: 1 };
-                } else { container.querySelector('img').src = img; }
+                } else { 
+                    container.querySelector('img').src = img; 
+                }
                 container.classList.add('active');
             }
-            updateUI(); renderGrid();
         }
 
         function removeAcc(slot) {
             activeAccessories[slot] = null;
             const container = document.getElementById(slot + '-container');
             if(container) container.classList.remove('active', 'selected');
-            updateUI(); renderGrid();
+            updateUI(); 
+            renderGrid();
         }
 
         function mirrorAcc(slot) {
@@ -337,7 +344,11 @@
                     el.querySelector('img').style.transform = `scaleX(1)`;
                 }
             }
-            updateUI(); renderGrid();
+            // Limpa os acessórios ativos para o Reset funcionar 100%
+            activeAccessories = {};
+            document.querySelectorAll('.draggable-acc').forEach(el => el.classList.remove('active'));
+            updateUI(); 
+            renderGrid();
         }
 
         function manualStreakUpdate(val) { streak = parseInt(val) || 0; updateUI(); renderMenus(); renderGrid(); }
