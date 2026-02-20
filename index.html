@@ -3,19 +3,46 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Streak Studio - Mirror Fix</title>
+    <title>Streak Studio - Desktop Version</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap');
-        body { font-family: 'Inter', sans-serif; background-color: #000; color: white; overflow: hidden; user-select: none; margin: 0; touch-action: none; }
         
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: #000; 
+            color: white; 
+            overflow: hidden; 
+            user-select: none; 
+            margin: 0; 
+            touch-action: none;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        /* Ajuste para Desktop: Vira uma linha (Lado a Lado) */
+        @media (min-width: 1024px) {
+            body { flex-direction: row; }
+            .main-canvas { flex: 1; height: 100vh; position: relative; }
+            .sidebar { 
+                width: 400px; 
+                height: 100vh; 
+                border-left: 1px solid rgba(255,255,255,0.1); 
+                border-top: none;
+                background: #000;
+            }
+        }
+
         .title-3d {
             font-weight: 900; font-style: italic; text-transform: uppercase; color: #fff; letter-spacing: -1px;
             text-shadow: 0 1px 0 #ccc, 0 2px 0 #c9c9c9, 0 3px 0 #bbb, 0 4px 0 #b9b9b9, 0 5px 0 #aaa, 0 6px 1px rgba(0,0,0,.1), 0 0 5px rgba(0,0,0,.1), 0 1px 3px rgba(0,0,0,.3), 0 3px 5px rgba(0,0,0,.2), 0 5px 10px rgba(0,0,0,.25);
         }
 
-        .character-container { position: relative; width: 100vw; height: 38vh; display: flex; justify-content: center; align-items: center; z-index: 10; }
-        .character-wrapper { position: relative; width: 250px; height: 250px; transition: transform 0.1s ease-out; border: 2px dashed transparent; }
+        .character-container { position: relative; width: 100%; height: 50vh; display: flex; justify-content: center; align-items: center; z-index: 10; }
+        @media (min-width: 1024px) { .character-container { height: 100vh; } }
+
+        .character-wrapper { position: relative; width: 280px; height: 280px; transition: transform 0.1s ease-out; border: 2px dashed transparent; }
         .character-wrapper.selected { border-color: rgba(255,255,255,0.6); background: rgba(255,255,255,0.05); border-radius: 12px; }
         .character-img { width: 100%; height: 100%; object-fit: contain; pointer-events: none; }
         
@@ -24,20 +51,17 @@
         .draggable-acc.selected { border-color: rgba(255,255,255,0.6); background: rgba(255,255,255,0.05); border-radius: 8px; pointer-events: auto; }
 
         .control-btn {
-            position: absolute; width: 30px; height: 30px;
-            color: white; border-radius: 50%; display: none;
-            align-items: center; justify-content: center; font-size: 14px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.5); cursor: pointer; z-index: 60;
-            border: 2px solid white; pointer-events: auto; transform: scale(1) !important; /* Impede que o botão herde escala negativa */
+            position: absolute; width: 30px; height: 30px; color: white; border-radius: 50%; display: none;
+            align-items: center; justify-content: center; font-size: 14px; box-shadow: 0 2px 10px rgba(0,0,0,0.5); 
+            cursor: pointer; z-index: 60; border: 2px solid white; pointer-events: auto; transform: scale(1) !important;
         }
         .trash-btn { background: #ff4444; top: -15px; right: -15px; }
         .mirror-btn { background: #3b82f6; top: -15px; left: -15px; }
-        
         .draggable-acc.selected .control-btn { display: flex; }
         
-        .ui-overlay { position: relative; z-index: 100; background: #000; border-top: 1px solid rgba(255,255,255,0.1); }
+        .sidebar { position: relative; z-index: 100; background: #000; border-top: 1px solid rgba(255,255,255,0.1); display: flex; flex-direction: column; flex: 1; }
+        
         #main-menu { border-bottom: 2px solid rgba(255,255,255,0.05); display: flex; overflow-x: auto; scrollbar-width: none; }
-        #main-menu::-webkit-scrollbar { display: none; }
         .tab-btn { padding: 12px 20px; font-weight: 700; font-size: 13px; color: #666; text-align: center; position: relative; white-space: nowrap; }
         .tab-btn.active { color: white; }
         .tab-btn.active::after { content: ''; position: absolute; bottom: -2px; left: 20%; width: 60%; height: 3px; background: white; border-radius: 10px; }
@@ -46,46 +70,47 @@
         .sub-tab-btn { font-size: 11px; font-weight: 800; text-transform: uppercase; color: #fff; padding: 6px 16px; border-radius: 20px; background: #1A1A1A; border: 1px solid transparent; white-space: nowrap; }
         .sub-tab-btn.active { background: #333; border-color: #555; }
 
-        .content-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; padding: 16px; height: 260px; overflow-y: auto; align-content: start; }
-        .item-card-wrapper { display: flex; flex-direction: column; gap: 4px; align-items: start; }
-        .item-card { background: #1A1A1A; border-radius: 12px; width: 100%; aspect-ratio: 1/1; display: flex; align-items: center; justify-content: center; border: 2px solid transparent; }
+        .content-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; padding: 16px; flex: 1; overflow-y: auto; align-content: start; }
+        @media (max-width: 1023px) { .content-grid { grid-template-columns: repeat(3, 1fr); height: 260px; } }
+
+        .item-card { background: #1A1A1A; border-radius: 12px; width: 100%; aspect-ratio: 1/1; display: flex; align-items: center; justify-content: center; border: 2px solid transparent; cursor: pointer; }
         .item-card.selected { border-color: white; background: rgba(255,255,255,0.1); }
-        .item-name { font-size: 10px; font-weight: 700; color: white; width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .item-author { font-size: 8px; color: #888; }
         
-        #reset-pos-btn { display: none; position: absolute; top: 10px; right: 10px; background: #ff4444; color: white; font-size: 10px; font-weight: 800; padding: 8px 12px; border-radius: 10px; z-index: 200; }
+        #reset-pos-btn { display: none; position: absolute; top: 10px; left: 10px; background: #ff4444; color: white; font-size: 10px; font-weight: 800; padding: 8px 12px; border-radius: 10px; z-index: 200; }
         #streak-input { background: transparent; color: white; border: none; font-weight: bold; width: 100%; text-align: center; outline: none; }
     </style>
 </head>
-<body class="flex flex-col">
+<body>
 
-    <header class="p-6 flex justify-between items-start relative z-[100]">
-        <h1 class="title-3d text-2xl">Streak Studio</h1>
-        <div class="text-right flex flex-col items-end">
-            <span id="streak-count" class="text-4xl font-black italic leading-none">3</span>
-            <span class="text-[9px] font-bold uppercase tracking-wider text-gray-400 mt-1">Dias de sequência</span>
+    <main class="main-canvas">
+        <header class="p-6 flex justify-between items-start absolute top-0 left-0 w-full z-[100]">
+            <h1 class="title-3d text-2xl">Streak Studio</h1>
+            <div class="text-right flex flex-col items-end">
+                <span id="streak-count" class="text-4xl font-black italic leading-none">3</span>
+                <span class="text-[9px] font-bold uppercase tracking-wider text-gray-400 mt-1">Dias de sequência</span>
+            </div>
+        </header>
+
+        <div class="character-container">
+            <button id="reset-pos-btn" onclick="resetAccPositions()">Resetar 🛠️</button>
+            <div class="character-wrapper" id="interaction-zone">
+                <img id="char-img" src="fogo_amarelo.png" class="character-img">
+            </div>
         </div>
-    </header>
+    </main>
 
-    <div class="character-container">
-        <button id="reset-pos-btn" onclick="resetAccPositions()">Resetar 🛠️</button>
-        <div class="character-wrapper" id="interaction-zone">
-            <img id="char-img" src="fogo_amarelo.png" class="character-img">
-        </div>
-    </div>
-
-    <div class="ui-overlay flex-1 flex flex-col">
-        <div class="px-5 py-3 flex gap-2">
-            <button onclick="increaseStreak()" class="flex-1 bg-white text-black font-black py-4 rounded-xl uppercase italic text-xs">Mandar Foguinho 🔥</button>
-            <div class="w-12 h-12 flex items-center justify-center rounded-xl bg-[#1A1A1A] text-white font-bold text-lg">
+    <aside class="sidebar">
+        <div class="px-5 py-6 flex gap-2 border-b border-white/10">
+            <button onclick="increaseStreak()" class="flex-1 bg-white text-black font-black py-4 rounded-xl uppercase italic text-xs hover:bg-gray-200 transition-colors">Mandar Foguinho 🔥</button>
+            <div class="w-14 h-14 flex items-center justify-center rounded-xl bg-[#1A1A1A] text-white font-bold text-lg border border-white/5">
                 <input type="number" id="streak-input" value="3" oninput="manualStreakUpdate(this.value)">
             </div>
         </div>
         
-        <div id="main-menu"></div>
+        <nav id="main-menu"></nav>
         <div id="sub-menu-container" class="submenu no-scrollbar"></div>
         <div id="grid-content" class="content-grid no-scrollbar"></div>
-    </div>
+    </aside>
 
     <script>
         const GITHUB_JSON_URL = "https://raw.githubusercontent.com/bytechoficial/steak-studio-data/refs/heads/main/itens.json";
@@ -150,14 +175,19 @@
             filtered.forEach(item => {
                 const slot = item.sub || item.categoria;
                 const isSelected = (currentTab === 'pose') ? (currentPoseImg === item.imagem) : (activeAccessories[slot] === item.imagem);
-                createCard(grid, item.imagem, item.nome, item.autor, () => {
+                
+                const card = document.createElement('div');
+                card.className = `item-card ${isSelected ? 'selected' : ''}`;
+                card.onclick = () => {
                     if (currentTab === 'pose') {
                         currentPoseImg = (currentPoseImg === item.imagem) ? null : item.imagem;
                         updateUI(); renderGrid();
                     } else {
                         toggleAcc(slot, item.imagem);
                     }
-                }, isSelected);
+                };
+                card.innerHTML = `<img src="${item.imagem}" class="w-20 h-20 object-contain">`;
+                grid.appendChild(card);
             });
         }
 
@@ -167,10 +197,6 @@
             document.getElementById('streak-count').innerText = streak;
             document.getElementById('streak-input').value = streak;
             document.getElementById('streak-count').style.color = info.color;
-            if (currentPoseImg) {
-                const itemPose = todosOsItens.find(i => i.imagem === currentPoseImg);
-                if (itemPose && itemPose.sub !== info.id) currentPoseImg = null;
-            }
             charImg.src = currentPoseImg ? currentPoseImg : info.base;
             const hasActiveItems = Object.values(activeAccessories).some(val => val !== null) || currentPoseImg !== null;
             document.getElementById('reset-pos-btn').style.display = hasActiveItems ? 'block' : 'none';
@@ -210,29 +236,22 @@
             const state = accStates[slot];
             state.flip *= -1; 
             const img = document.getElementById(slot + '-container').querySelector('.acc-content-img');
-            img.style.transform = `scaleX(${state.flip})`; // Inverte apenas a imagem, não o contêiner
-        }
-
-        function createCard(container, imgPath, name, author, onClick, isActive) {
-            const wrapper = document.createElement('div');
-            wrapper.className = 'item-card-wrapper';
-            const card = document.createElement('div');
-            card.className = `item-card ${isActive ? 'selected' : ''}`;
-            card.onclick = onClick;
-            card.innerHTML = `<img src="${imgPath}" class="w-16 h-16 object-contain">`;
-            wrapper.innerHTML = `<div class="item-name">${name}</div><div class="item-author">${author}</div>`;
-            wrapper.prepend(card);
-            container.appendChild(wrapper);
+            img.style.transform = `scaleX(${state.flip})`;
         }
 
         // --- GESTOS ---
         let start = { x: 0, y: 0, dist: 0, angle: 0, isMoving: false, selectedTarget: null };
         const zone = document.getElementById('interaction-zone');
 
-        zone.addEventListener('touchstart', e => {
-            if (e.target.closest('.control-btn')) return; 
+        zone.addEventListener('touchstart', handleStart);
+        zone.addEventListener('mousedown', handleStart);
 
-            const t = e.touches;
+        function handleStart(e) {
+            if (e.target.closest('.control-btn')) return; 
+            const isTouch = e.type === 'touchstart';
+            const clientX = isTouch ? e.touches[0].clientX : e.clientX;
+            const clientY = isTouch ? e.touches[0].clientY : e.clientY;
+
             let targetId = null; let minDist = 80; 
             document.querySelectorAll('.draggable-acc, .character-wrapper').forEach(el => el.classList.remove('selected'));
 
@@ -241,12 +260,12 @@
                 const el = document.getElementById(id + '-container');
                 if (!el) continue;
                 const rect = el.getBoundingClientRect();
-                const d = Math.hypot(t[0].clientX - (rect.left + rect.width/2), t[0].clientY - (rect.top + rect.height/2));
+                const d = Math.hypot(clientX - (rect.left + rect.width/2), clientY - (rect.top + rect.height/2));
                 if (d < minDist) { minDist = d; targetId = id; }
             }
             if (!targetId) {
                 const rect = zone.getBoundingClientRect();
-                const d = Math.hypot(t[0].clientX - (rect.left + rect.width/2), t[0].clientY - (rect.top + rect.height/2));
+                const d = Math.hypot(clientX - (rect.left + rect.width/2), clientY - (rect.top + rect.height/2));
                 if (d < 150) targetId = 'char-body';
             }
             if (targetId) {
@@ -254,40 +273,40 @@
                 if (targetId === 'char-body') zone.classList.add('selected');
                 else document.getElementById(targetId + '-container').classList.add('selected');
 
-                if (t.length === 1) { start.x = t[0].clientX; start.y = t[0].clientY; }
-                else if (t.length === 2) {
-                    start.dist = Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
-                    start.angle = Math.atan2(t[1].clientY - t[0].clientY, t[1].clientX - t[0].clientX) * 180 / Math.PI;
+                start.x = clientX; start.y = clientY;
+                if (isTouch && e.touches.length === 2) {
+                    start.dist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+                    start.angle = Math.atan2(e.touches[1].clientY - e.touches[0].clientY, e.touches[1].clientX - e.touches[0].clientX) * 180 / Math.PI;
                 }
             }
-        });
+        }
 
-        zone.addEventListener('touchmove', e => {
+        window.addEventListener('touchmove', handleMove, { passive: false });
+        window.addEventListener('mousemove', handleMove);
+
+        function handleMove(e) {
             if (!start.isMoving) return;
-            e.preventDefault();
-            const t = e.touches;
+            const isTouch = e.type === 'touchmove';
+            const clientX = isTouch ? e.touches[0].clientX : e.clientX;
+            const clientY = isTouch ? e.touches[0].clientY : e.clientY;
+
             let state = (start.selectedTarget === 'char-body') ? charState : accStates[start.selectedTarget];
             let element = (start.selectedTarget === 'char-body') ? zone : document.getElementById(start.selectedTarget + '-container');
-            if (t.length === 1) {
-                state.x += (t[0].clientX - start.x); state.y += (t[0].clientY - start.y);
-                start.x = t[0].clientX; start.y = t[0].clientY;
-            } else if (t.length === 2) {
-                const d = Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
-                const a = Math.atan2(t[1].clientY - t[0].clientY, t[1].clientX - t[0].clientX) * 180 / Math.PI;
+
+            if (!isTouch || e.touches.length === 1) {
+                state.x += (clientX - start.x); state.y += (clientY - start.y);
+                start.x = clientX; start.y = clientY;
+            } else if (e.touches.length === 2) {
+                const d = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+                const a = Math.atan2(e.touches[1].clientY - e.touches[0].clientY, e.touches[1].clientX - e.touches[0].clientX) * 180 / Math.PI;
                 state.s *= (d / start.dist); state.r += (a - start.angle);
                 start.dist = d; start.angle = a;
             }
-            // Transfomação aplicada ao contêiner (sem o flip aqui)
             element.style.transform = `translate(${state.x}px, ${state.y}px) scale(${state.s}) rotate(${state.r}deg)`;
-        }, { passive: false });
+        }
 
-        zone.addEventListener('touchend', () => { start.isMoving = false; });
-
-        document.body.addEventListener('touchstart', (e) => {
-            if (!zone.contains(e.target) && !e.target.closest('.control-btn')) {
-                document.querySelectorAll('.draggable-acc, .character-wrapper').forEach(el => el.classList.remove('selected'));
-            }
-        }, {passive: true});
+        window.addEventListener('touchend', () => start.isMoving = false);
+        window.addEventListener('mouseup', () => start.isMoving = false);
 
         async function loadGitHubData() {
             try {
