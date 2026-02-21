@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Streak Studio - Refined Desktop</title>
+    <title>Streak Studio - Pro Desktop</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap');
@@ -24,12 +24,7 @@
         @media (min-width: 1024px) {
             body { flex-direction: row; }
             .main-canvas { flex: 1; height: 100vh; position: relative; }
-            .sidebar { 
-                width: 380px; 
-                height: 100vh; 
-                border-left: 1px solid rgba(255,255,255,0.1); 
-                background: #000;
-            }
+            .sidebar { width: 380px; height: 100vh; border-left: 1px solid rgba(255,255,255,0.1); background: #000; }
         }
 
         .title-3d {
@@ -58,7 +53,6 @@
         .draggable-acc.selected .control-btn { display: flex; }
         
         .sidebar { position: relative; z-index: 100; background: #000; border-top: 1px solid rgba(255,255,255,0.1); display: flex; flex-direction: column; }
-        
         #main-menu { border-bottom: 2px solid rgba(255,255,255,0.05); display: flex; overflow-x: auto; scrollbar-width: none; }
         .tab-btn { padding: 12px 20px; font-weight: 700; font-size: 13px; color: #666; text-align: center; position: relative; white-space: nowrap; cursor: pointer; }
         .tab-btn.active { color: white; }
@@ -71,12 +65,11 @@
         .content-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; padding: 16px; flex: 1; overflow-y: auto; align-content: start; }
         @media (max-width: 1023px) { .content-grid { grid-template-columns: repeat(3, 1fr); height: 260px; } }
 
-        .item-card-wrapper { display: flex; flex-direction: column; gap: 6px; align-items: center; text-align: center; cursor: pointer; pointer-events: auto; }
-        .item-card { background: #FFFFFF; border-radius: 12px; width: 100%; aspect-ratio: 1/1; display: flex; align-items: center; justify-content: center; border: 2px solid transparent; padding: 10px; pointer-events: none; }
-        .item-card-wrapper:hover .item-card { opacity: 0.9; }
+        .item-card-wrapper { display: flex; flex-direction: column; gap: 6px; align-items: center; text-align: center; cursor: pointer; }
+        .item-card { background: #FFFFFF; border-radius: 12px; width: 100%; aspect-ratio: 1/1; display: flex; align-items: center; justify-content: center; border: 2px solid transparent; padding: 10px; }
         .item-card-wrapper.selected .item-card { border-color: #3b82f6; border-width: 3px; }
-        .item-name { font-size: 10px; font-weight: 800; color: white; width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; pointer-events: none; }
-        .item-author { font-size: 8px; font-weight: 500; color: #666; text-transform: uppercase; letter-spacing: 0.5px; pointer-events: none; }
+        .item-name { font-size: 10px; font-weight: 800; color: white; width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .item-author { font-size: 8px; font-weight: 500; color: #666; text-transform: uppercase; letter-spacing: 0.5px; }
         
         #reset-pos-btn { display: none; margin-top: 8px; background: #ff4444; color: white; font-size: 9px; font-weight: 900; padding: 6px 12px; border-radius: 8px; text-transform: uppercase; cursor: pointer; }
         #streak-input { background: transparent; color: white; border: none; font-weight: bold; width: 100%; text-align: center; outline: none; }
@@ -103,8 +96,8 @@
 
     <aside class="sidebar">
         <div class="px-5 py-6 flex gap-2 border-b border-white/10">
-            <button onclick="increaseStreak()" class="flex-1 bg-white text-black font-black py-4 rounded-xl uppercase italic text-xs hover:bg-gray-200 transition-colors cursor-pointer">Mandar Foguinho 🔥</button>
-            <div class="w-14 h-14 flex items-center justify-center rounded-xl bg-[#1A1A1A] text-white font-bold text-lg border border-white/5">
+            <button onclick="increaseStreak()" class="flex-1 bg-white text-black font-black py-4 rounded-xl uppercase italic text-xs hover:bg-gray-200 cursor-pointer">Mandar Foguinho 🔥</button>
+            <div class="w-14 h-14 flex items-center justify-center rounded-xl bg-[#1A1A1A] text-white font-bold text-lg">
                 <input type="number" id="streak-input" value="3" oninput="manualStreakUpdate(this.value)">
             </div>
         </div>
@@ -125,6 +118,11 @@
         let accStates = {}; 
         let charState = { x: 0, y: 0, s: 1, r: 0, flip: 1 }; 
         let currentPoseImg = null;
+        let isRotatingKey = false;
+
+        // Detectar tecla R para rotação no Desktop
+        window.addEventListener('keydown', (e) => { if(e.key.toLowerCase() === 'r') isRotatingKey = true; });
+        window.addEventListener('keyup', (e) => { if(e.key.toLowerCase() === 'r') isRotatingKey = false; });
 
         function getStreakInfo() {
             if (streak >= 199) return { color: '#3b82f6', base: 'fogo_azul.png', id: 'azul' };
@@ -180,27 +178,17 @@
                 
                 const wrapper = document.createElement('div');
                 wrapper.className = `item-card-wrapper ${isSelected ? 'selected' : ''}`;
-                
-                wrapper.onclick = (e) => {
-                    if (currentTab === 'pose') {
-                        currentPoseImg = (currentPoseImg === item.imagem) ? null : item.imagem;
-                    } else {
-                        toggleAcc(slot, item.imagem);
-                    }
-                    updateUI(); 
-                    renderGrid();
+                wrapper.onclick = () => {
+                    if (currentTab === 'pose') currentPoseImg = (currentPoseImg === item.imagem) ? null : item.imagem;
+                    else toggleAcc(slot, item.imagem);
+                    updateUI(); renderGrid();
                 };
 
-                const card = document.createElement('div');
-                card.className = `item-card`;
-                card.innerHTML = `<img src="${item.imagem}" class="w-full h-full object-contain">`;
-                
-                wrapper.appendChild(card);
-                wrapper.innerHTML += `
+                wrapper.innerHTML = `
+                    <div class="item-card"><img src="${item.imagem}" class="w-full h-full object-contain"></div>
                     <div class="item-name">${item.nome}</div>
-                    <div class="item-author">${item.author || 'BY TECH'}</div>
+                    <div class="item-author">${item.autor}</div>
                 `;
-
                 grid.appendChild(wrapper);
             });
         }
@@ -233,9 +221,7 @@
                     `;
                     document.getElementById('interaction-zone').appendChild(container);
                     accStates[slot] = { x: 0, y: 0, s: 1, r: 0, flip: 1 };
-                } else { 
-                    container.querySelector('img').src = img; 
-                }
+                } else { container.querySelector('img').src = img; }
                 container.classList.add('active');
             }
         }
@@ -244,8 +230,7 @@
             activeAccessories[slot] = null;
             const container = document.getElementById(slot + '-container');
             if(container) container.classList.remove('active', 'selected');
-            updateUI(); 
-            renderGrid();
+            updateUI(); renderGrid();
         }
 
         function mirrorAcc(slot) {
@@ -258,22 +243,13 @@
         let start = { x: 0, y: 0, dist: 0, angle: 0, isMoving: false, selectedTarget: null };
         const zone = document.getElementById('interaction-zone');
 
-        // --- CORREÇÃO DE ROTAÇÃO PARA VERCEL/DESKTOP ---
+        // Mouse Wheel para Zoom
         zone.addEventListener('wheel', (e) => {
             if (!start.selectedTarget) return;
             e.preventDefault();
-            
             let state = (start.selectedTarget === 'char-body') ? charState : accStates[start.selectedTarget];
             let element = (start.selectedTarget === 'char-body') ? zone : document.getElementById(start.selectedTarget + '-container');
-
-            if (e.shiftKey) {
-                // ROTAÇÃO: Segure SHIFT e deslize 2 dedos no touchpad
-                state.r += e.deltaY * 0.5; 
-            } else {
-                // ZOOM: Apenas deslize 2 dedos
-                const delta = e.deltaY > 0 ? 0.9 : 1.1;
-                state.s *= delta;
-            }
+            state.s *= (e.deltaY > 0 ? 0.9 : 1.1);
             element.style.transform = `translate(${state.x}px, ${state.y}px) scale(${state.s}) rotate(${state.r}deg)`;
         }, { passive: false });
 
@@ -297,18 +273,12 @@
                 const d = Math.hypot(clientX - (rect.left + rect.width/2), clientY - (rect.top + rect.height/2));
                 if (d < minDist) { minDist = d; targetId = id; }
             }
-            if (!targetId) {
-                const rect = zone.getBoundingClientRect();
-                const d = Math.hypot(clientX - (rect.left + rect.width/2), clientY - (rect.top + rect.height/2));
-                if (d < 150) targetId = 'char-body';
-            }
-            if (targetId) {
-                start.selectedTarget = targetId; start.isMoving = true;
-                if (targetId === 'char-body') zone.classList.add('selected');
-                else document.getElementById(targetId + '-container').classList.add('selected');
+            if (!targetId) targetId = 'char-body';
 
-                start.x = clientX; start.y = clientY;
-            }
+            start.selectedTarget = targetId; start.isMoving = true;
+            const el = targetId === 'char-body' ? zone : document.getElementById(targetId + '-container');
+            el.classList.add('selected');
+            start.x = clientX; start.y = clientY;
         }
 
         window.addEventListener('touchmove', handleMove, { passive: false });
@@ -323,38 +293,32 @@
             let state = (start.selectedTarget === 'char-body') ? charState : accStates[start.selectedTarget];
             let element = (start.selectedTarget === 'char-body') ? zone : document.getElementById(start.selectedTarget + '-container');
 
-            state.x += (clientX - start.x); state.y += (clientY - start.y);
-            start.x = clientX; start.y = clientY;
+            if (isRotatingKey) {
+                // Rotação via Mouse: Se a tecla R estiver pressionada
+                state.r += (clientX - start.x);
+            } else {
+                // Movimento normal
+                state.x += (clientX - start.x);
+                state.y += (clientY - start.y);
+            }
             
+            start.x = clientX; start.y = clientY;
             element.style.transform = `translate(${state.x}px, ${state.y}px) scale(${state.s}) rotate(${state.r}deg)`;
         }
 
-        window.addEventListener('touchend', () => start.isMoving = false);
         window.addEventListener('mouseup', () => start.isMoving = false);
+        window.addEventListener('touchend', () => start.isMoving = false);
 
         async function loadGitHubData() {
             try {
                 const response = await fetch(GITHUB_JSON_URL + "?t=" + new Date().getTime());
                 todosOsItens = await response.json();
                 renderTabs(); renderMenus(); renderGrid();
-            } catch (e) { console.error("Erro ao carregar"); }
+            } catch (e) { console.error("Erro ao carregar dados"); }
         }
 
         function resetAccPositions() {
-            currentPoseImg = null; charState = { x: 0, y: 0, s: 1, r: 0, flip: 1 };
-            zone.style.transform = `translate(0,0) scale(1) rotate(0)`;
-            for (let id in accStates) {
-                accStates[id] = { x: 0, y: 0, s: 1, r: 0, flip: 1 };
-                const el = document.getElementById(id + '-container');
-                if(el) {
-                    el.style.transform = `translate(0,0) scale(1) rotate(0)`;
-                    el.querySelector('img').style.transform = `scaleX(1)`;
-                }
-            }
-            activeAccessories = {};
-            document.querySelectorAll('.draggable-acc').forEach(el => el.classList.remove('active'));
-            updateUI(); 
-            renderGrid();
+            location.reload(); // Forma mais limpa de resetar tudo no desktop
         }
 
         function manualStreakUpdate(val) { streak = parseInt(val) || 0; updateUI(); renderMenus(); renderGrid(); }
