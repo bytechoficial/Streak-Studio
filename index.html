@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Streak Studio - Pro Desktop</title>
+    <title>Streak Studio - Refined</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap');
@@ -83,7 +83,7 @@
             <div class="text-right flex flex-col items-end">
                 <span id="streak-count" class="text-4xl font-black italic leading-none">3</span>
                 <span class="text-[9px] font-bold uppercase tracking-wider text-gray-400 mt-1">Dias de sequência</span>
-                <button id="reset-pos-btn" onclick="resetAccPositions()">Resetar 🛠️</button>
+                <button id="reset-pos-btn" onclick="resetAccPositions()">Resetar Posição 🛠️</button>
             </div>
         </header>
 
@@ -97,7 +97,7 @@
     <aside class="sidebar">
         <div class="px-5 py-6 flex gap-2 border-b border-white/10">
             <button onclick="increaseStreak()" class="flex-1 bg-white text-black font-black py-4 rounded-xl uppercase italic text-xs hover:bg-gray-200 cursor-pointer">Mandar Foguinho 🔥</button>
-            <div class="w-14 h-14 flex items-center justify-center rounded-xl bg-[#1A1A1A] text-white font-bold text-lg">
+            <div class="w-14 h-14 flex items-center justify-center rounded-xl bg-[#1A1A1A] text-white font-bold text-lg border border-white/5">
                 <input type="number" id="streak-input" value="3" oninput="manualStreakUpdate(this.value)">
             </div>
         </div>
@@ -118,11 +118,6 @@
         let accStates = {}; 
         let charState = { x: 0, y: 0, s: 1, r: 0, flip: 1 }; 
         let currentPoseImg = null;
-        let isRotatingKey = false;
-
-        // Detectar tecla R para rotação no Desktop
-        window.addEventListener('keydown', (e) => { if(e.key.toLowerCase() === 'r') isRotatingKey = true; });
-        window.addEventListener('keyup', (e) => { if(e.key.toLowerCase() === 'r') isRotatingKey = false; });
 
         function getStreakInfo() {
             if (streak >= 199) return { color: '#3b82f6', base: 'fogo_azul.png', id: 'azul' };
@@ -187,7 +182,7 @@
                 wrapper.innerHTML = `
                     <div class="item-card"><img src="${item.imagem}" class="w-full h-full object-contain"></div>
                     <div class="item-name">${item.nome}</div>
-                    <div class="item-author">${item.autor}</div>
+                    <div class="item-author">${item.autor || item.author || 'BY TECH'}</div>
                 `;
                 grid.appendChild(wrapper);
             });
@@ -200,8 +195,7 @@
             document.getElementById('streak-input').value = streak;
             document.getElementById('streak-count').style.color = info.color;
             charImg.src = currentPoseImg ? currentPoseImg : info.base;
-            const hasActiveItems = Object.values(activeAccessories).some(val => val !== null) || currentPoseImg !== null;
-            document.getElementById('reset-pos-btn').style.display = hasActiveItems ? 'block' : 'none';
+            document.getElementById('reset-pos-btn').style.display = 'block';
         }
 
         function toggleAcc(slot, img) {
@@ -240,16 +234,21 @@
             img.style.transform = `scaleX(${state.flip})`;
         }
 
-        let start = { x: 0, y: 0, dist: 0, angle: 0, isMoving: false, selectedTarget: null };
+        let start = { x: 0, y: 0, isMoving: false, selectedTarget: null };
         const zone = document.getElementById('interaction-zone');
 
-        // Mouse Wheel para Zoom
+        // Lógica de Scroll do Touchpad (Shift + Scroll para rotacionar)
         zone.addEventListener('wheel', (e) => {
             if (!start.selectedTarget) return;
             e.preventDefault();
             let state = (start.selectedTarget === 'char-body') ? charState : accStates[start.selectedTarget];
             let element = (start.selectedTarget === 'char-body') ? zone : document.getElementById(start.selectedTarget + '-container');
-            state.s *= (e.deltaY > 0 ? 0.9 : 1.1);
+
+            if (e.shiftKey) {
+                state.r += e.deltaY * 0.5; // Rotação
+            } else {
+                state.s *= (e.deltaY > 0 ? 0.95 : 1.05); // Zoom
+            }
             element.style.transform = `translate(${state.x}px, ${state.y}px) scale(${state.s}) rotate(${state.r}deg)`;
         }, { passive: false });
 
@@ -268,7 +267,7 @@
             for (let id in activeAccessories) {
                 if (!activeAccessories[id]) continue;
                 const el = document.getElementById(id + '-container');
-                if (!el) continue;
+                if (!el || !el.classList.contains('active')) continue;
                 const rect = el.getBoundingClientRect();
                 const d = Math.hypot(clientX - (rect.left + rect.width/2), clientY - (rect.top + rect.height/2));
                 if (d < minDist) { minDist = d; targetId = id; }
@@ -293,14 +292,8 @@
             let state = (start.selectedTarget === 'char-body') ? charState : accStates[start.selectedTarget];
             let element = (start.selectedTarget === 'char-body') ? zone : document.getElementById(start.selectedTarget + '-container');
 
-            if (isRotatingKey) {
-                // Rotação via Mouse: Se a tecla R estiver pressionada
-                state.r += (clientX - start.x);
-            } else {
-                // Movimento normal
-                state.x += (clientX - start.x);
-                state.y += (clientY - start.y);
-            }
+            state.x += (clientX - start.x);
+            state.y += (clientY - start.y);
             
             start.x = clientX; start.y = clientY;
             element.style.transform = `translate(${state.x}px, ${state.y}px) scale(${state.s}) rotate(${state.r}deg)`;
@@ -314,11 +307,21 @@
                 const response = await fetch(GITHUB_JSON_URL + "?t=" + new Date().getTime());
                 todosOsItens = await response.json();
                 renderTabs(); renderMenus(); renderGrid();
-            } catch (e) { console.error("Erro ao carregar dados"); }
+            } catch (e) { console.error("Erro ao carregar"); }
         }
 
+        // CORREÇÃO DO RESET: Apenas centraliza, não apaga dados nem foguinhos.
         function resetAccPositions() {
-            location.reload(); // Forma mais limpa de resetar tudo no desktop
+            charState = { x: 0, y: 0, s: 1, r: 0, flip: 1 };
+            zone.style.transform = `translate(0,0) scale(1) rotate(0)`;
+            
+            for (let id in accStates) {
+                accStates[id] = { x: 0, y: 0, s: 1, r: 0, flip: 1 };
+                const el = document.getElementById(id + '-container');
+                if(el) {
+                    el.style.transform = `translate(0,0) scale(1) rotate(0)`;
+                }
+            }
         }
 
         function manualStreakUpdate(val) { streak = parseInt(val) || 0; updateUI(); renderMenus(); renderGrid(); }
