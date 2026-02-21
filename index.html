@@ -466,5 +466,45 @@
 
         window.onload = () => { updateUI(); loadGitHubData(); };
     </script>
+    <script>
+    // BLOQUEIO DE INSPEÇÃO E PROTEÇÃO DE IMAGENS
+    
+    // 1. Bloquear Clique Direito
+    document.addEventListener('contextmenu', event => event.preventDefault());
+
+    // 2. Bloquear Atalhos de Teclado (F12, Ctrl+Shift+I, Ctrl+U, etc)
+    document.onkeydown = function(e) {
+        if (e.keyCode == 123) { return false; } // F12
+        if (e.ctrlKey && e.shiftKey && e.keyCode == 'I'.charCodeAt(0)) { return false; } // Inspect
+        if (e.ctrlKey && e.shiftKey && e.keyCode == 'C'.charCodeAt(0)) { return false; } // Element Select
+        if (e.ctrlKey && e.shiftKey && e.keyCode == 'J'.charCodeAt(0)) { return false; } // Console
+        if (e.ctrlKey && e.keyCode == 'U'.charCodeAt(0)) { return false; } // View Source
+    };
+
+    // 3. Impedir Arrastar Imagens (Protege contra abertura em nova aba)
+    document.addEventListener('dragstart', function(e) {
+        if (e.target.nodeName == 'IMG') {
+            e.preventDefault();
+        }
+    }, false);
+
+    // 4. Anti-Debugger (Loop que "pausa" o console se tentarem forçar a abertura)
+    setInterval(function() {
+        (function() {
+            (function a() {
+                try {
+                    (function b(i) {
+                        if (('' + (i / i)).length !== 1 || i % 20 === 0) {
+                            (function() {}).constructor('debugger')();
+                        } else {
+                            debugger;
+                        }
+                        b(++i);
+                    })(0);
+                } catch (e) {}
+            })();
+        })();
+    }, 1000);
+</script>
 </body>
 </html>
