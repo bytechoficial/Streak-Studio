@@ -72,7 +72,6 @@
         @media (max-width: 1023px) { .content-grid { grid-template-columns: repeat(3, 1fr); height: 260px; } }
 
         .item-card-wrapper { display: flex; flex-direction: column; gap: 6px; align-items: center; text-align: center; cursor: pointer; pointer-events: auto; }
-        /* ALTERAÇÃO: Fundo do card agora é branco (#FFFFFF) */
         .item-card { background: #FFFFFF; border-radius: 12px; width: 100%; aspect-ratio: 1/1; display: flex; align-items: center; justify-content: center; border: 2px solid transparent; padding: 10px; pointer-events: none; }
         .item-card-wrapper:hover .item-card { opacity: 0.9; }
         .item-card-wrapper.selected .item-card { border-color: #3b82f6; border-width: 3px; }
@@ -199,7 +198,7 @@
                 wrapper.appendChild(card);
                 wrapper.innerHTML += `
                     <div class="item-name">${item.nome}</div>
-                    <div class="item-author">${item.autor || 'BY TECH'}</div>
+                    <div class="item-author">${item.author || 'BY TECH'}</div>
                 `;
 
                 grid.appendChild(wrapper);
@@ -259,14 +258,19 @@
         let start = { x: 0, y: 0, dist: 0, angle: 0, isMoving: false, selectedTarget: null };
         const zone = document.getElementById('interaction-zone');
 
+        // --- CORREÇÃO DE ROTAÇÃO PARA VERCEL/DESKTOP ---
         zone.addEventListener('wheel', (e) => {
             if (!start.selectedTarget) return;
             e.preventDefault();
+            
             let state = (start.selectedTarget === 'char-body') ? charState : accStates[start.selectedTarget];
             let element = (start.selectedTarget === 'char-body') ? zone : document.getElementById(start.selectedTarget + '-container');
+
             if (e.shiftKey) {
+                // ROTAÇÃO: Segure SHIFT e deslize 2 dedos no touchpad
                 state.r += e.deltaY * 0.5; 
             } else {
+                // ZOOM: Apenas deslize 2 dedos
                 const delta = e.deltaY > 0 ? 0.9 : 1.1;
                 state.s *= delta;
             }
@@ -281,8 +285,10 @@
             const isTouch = e.type === 'touchstart';
             const clientX = isTouch ? e.touches[0].clientX : e.clientX;
             const clientY = isTouch ? e.touches[0].clientY : e.clientY;
+
             let targetId = null; let minDist = 80; 
             document.querySelectorAll('.draggable-acc, .character-wrapper').forEach(el => el.classList.remove('selected'));
+
             for (let id in activeAccessories) {
                 if (!activeAccessories[id]) continue;
                 const el = document.getElementById(id + '-container');
@@ -300,6 +306,7 @@
                 start.selectedTarget = targetId; start.isMoving = true;
                 if (targetId === 'char-body') zone.classList.add('selected');
                 else document.getElementById(targetId + '-container').classList.add('selected');
+
                 start.x = clientX; start.y = clientY;
             }
         }
@@ -312,10 +319,13 @@
             const isTouch = e.type === 'touchmove';
             const clientX = isTouch ? e.touches[0].clientX : e.clientX;
             const clientY = isTouch ? e.touches[0].clientY : e.clientY;
+
             let state = (start.selectedTarget === 'char-body') ? charState : accStates[start.selectedTarget];
             let element = (start.selectedTarget === 'char-body') ? zone : document.getElementById(start.selectedTarget + '-container');
+
             state.x += (clientX - start.x); state.y += (clientY - start.y);
             start.x = clientX; start.y = clientY;
+            
             element.style.transform = `translate(${state.x}px, ${state.y}px) scale(${state.s}) rotate(${state.r}deg)`;
         }
 
@@ -343,7 +353,8 @@
             }
             activeAccessories = {};
             document.querySelectorAll('.draggable-acc').forEach(el => el.classList.remove('active'));
-            updateUI(); renderGrid();
+            updateUI(); 
+            renderGrid();
         }
 
         function manualStreakUpdate(val) { streak = parseInt(val) || 0; updateUI(); renderMenus(); renderGrid(); }
