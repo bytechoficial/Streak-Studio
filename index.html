@@ -87,10 +87,9 @@
         
         #streak-input { background: transparent; color: white; border: none; font-weight: bold; width: 100%; text-align: center; outline: none; }
 
-        /* AJUSTE DO BOTÃO DE INFORMAÇÃO (MAIS PARA BAIXO E VISÍVEL) */
         .info-btn { 
             position: absolute; 
-            top: 12px; /* Movido para baixo */
+            top: 12px; 
             left: 12px; 
             width: 36px; 
             height: 36px; 
@@ -107,7 +106,6 @@
         }
         .info-btn:hover { background: #333; transform: scale(1.1); border-color: white; }
 
-        /* MODAL ESTILIZADO */
         .info-modal {
             position: fixed; inset: 0; background: rgba(0,0,0,0.9);
             display: none; align-items: center; justify-content: center;
@@ -136,8 +134,7 @@
 
     <div id="infoModal" class="info-modal" onclick="closeModal()">
         <div class="modal-card" onclick="event.stopPropagation()">
-            <div class="modal-img-container" id="modal-image-area">
-                </div>
+            <div class="modal-img-container" id="modal-image-area"></div>
             <h2 id="modal-title">Carregando...</h2>
             <p id="modal-desc">Buscando informações da última atualização...</p>
             <button class="modal-action-btn" id="modal-btn-text" onclick="window.location.reload()">ATUALIZAR APP</button>
@@ -170,7 +167,6 @@
 
     <aside class="sidebar" onclick="event.stopPropagation()">
         <div class="px-5 py-6 flex gap-2 border-b border-white/10 relative">
-            
             <div class="info-btn" onclick="openInfoModal()">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="white" stroke-width="2.5"/>
@@ -194,34 +190,25 @@
         const GITHUB_JSON_URL = "https://raw.githubusercontent.com/bytechoficial/steak-studio-data/refs/heads/main/itens.json";
         const GITHUB_INFO_URL = "https://raw.githubusercontent.com/bytechoficial/steak-studio-data/refs/heads/main/info.json";
 
-        // FUNÇÃO PARA BUSCAR INFO.JSON E ABRIR MODAL
         async function openInfoModal() {
             const modal = document.getElementById('infoModal');
             try {
                 const response = await fetch(GITHUB_INFO_URL + "?t=" + new Date().getTime());
                 const data = await response.json();
-                
                 document.getElementById('modal-title').innerText = data.titulo || "NOVA ATUALIZAÇÃO!";
-                document.getElementById('modal-desc').innerHTML = data.descricao || "Bugs corrigidos e funcionalidades adicionadas.";
+                document.getElementById('modal-desc').innerHTML = data.descricao || "Bugs corrigidos.";
                 document.getElementById('modal-btn-text').innerText = data.texto_botao || "ATUALIZAR APP";
-                
                 if (data.imagem) {
                     document.getElementById('modal-image-area').innerHTML = `<img src="${data.imagem}" class="w-full object-cover">`;
                 }
-                
                 modal.classList.add('active');
             } catch (e) {
-                console.error("Erro ao carregar info.json", e);
-                // Fallback caso o JSON falhe
-                document.getElementById('modal-title').innerText = "ERRO DE CONEXÃO";
-                document.getElementById('modal-desc').innerText = "Não foi possível carregar as informações do servidor.";
                 modal.classList.add('active');
             }
         }
 
         function closeModal() { document.getElementById('infoModal').classList.remove('active'); }
 
-        // --- RESTANTE DO SEU SCRIPT ORIGINAL MANTIDO ---
         let streak = 3;
         let activeAccessories = {}; 
         let currentTab = ''; 
@@ -295,10 +282,15 @@
 
         function renderMenus() {
             const subMenu = document.getElementById('sub-menu-container');
-            if (currentTab === 'pose') { subMenu.style.display = 'none'; return; }
             const itensDaAba = todosOsItens.filter(i => i.categoria === currentTab);
             const subs = [...new Set(itensDaAba.map(i => i.sub))].filter(s => s !== "");
-            if (subs.length <= 1) { subMenu.style.display = 'none'; currentSubTab = subs[0] || ""; return; }
+            
+            if (subs.length <= 1) { 
+                subMenu.style.display = 'none'; 
+                currentSubTab = subs[0] || ""; 
+                return; 
+            }
+            
             subMenu.style.display = 'flex';
             if (!currentSubTab || !subs.includes(currentSubTab)) currentSubTab = subs[0];
             subMenu.innerHTML = '';
@@ -314,12 +306,12 @@
         function renderGrid() {
             const grid = document.getElementById('grid-content');
             grid.innerHTML = '';
-            const info = getStreakInfo();
             const filtered = todosOsItens.filter(i => {
-                if (currentTab === 'pose') return i.categoria === 'pose' && i.sub === info.id;
+                if (currentTab === 'pose') return i.categoria === 'pose';
                 if (!currentSubTab) return i.categoria === currentTab;
                 return i.categoria === currentTab && i.sub === currentSubTab;
             });
+
             filtered.forEach(item => {
                 const slot = item.sub || item.categoria;
                 const isSelected = (currentTab === 'pose') ? (currentPoseImg === item.imagem) : (activeAccessories[slot] === item.imagem);
@@ -327,8 +319,11 @@
                 wrapper.className = `item-card-wrapper ${isSelected ? 'selected' : ''}`;
                 wrapper.onclick = (e) => {
                     e.stopPropagation();
-                    if (currentTab === 'pose') currentPoseImg = (currentPoseImg === item.imagem) ? null : item.imagem;
-                    else toggleAcc(slot, item.imagem);
+                    if (currentTab === 'pose') {
+                        currentPoseImg = (currentPoseImg === item.imagem) ? null : item.imagem;
+                    } else {
+                        toggleAcc(slot, item.imagem);
+                    }
                     saveHistory(); updateUI(); renderGrid();
                 };
                 wrapper.innerHTML = `<div class="item-card"><img src="${item.imagem}" class="w-full h-full object-contain"></div><div class="item-name">${item.nome}</div><div class="item-author">${item.autor || item.author || 'BY TECH'}</div>`;
@@ -416,9 +411,6 @@
             }
         }
 
-        window.addEventListener('touchmove', handleMove, { passive: false });
-        window.addEventListener('mousemove', handleMove);
-
         function handleMove(e) {
             if (!start.isMoving) return;
             const isTouch = e.type === 'touchmove';
@@ -439,6 +431,8 @@
             element.style.transform = `translate(${state.x}px, ${state.y}px) scale(${state.s}) rotate(${state.r}deg)`;
         }
 
+        window.addEventListener('touchmove', handleMove, { passive: false });
+        window.addEventListener('mousemove', handleMove);
         window.addEventListener('mouseup', () => { if(start.isMoving) saveHistory(); start.isMoving = false; });
         window.addEventListener('touchend', () => { if(start.isMoving) saveHistory(); start.isMoving = false; });
 
@@ -461,50 +455,18 @@
             saveHistory();
         }
 
-        function manualStreakUpdate(val) { streak = parseInt(val) || 0; updateUI(); renderMenus(); renderGrid(); }
-        function increaseStreak() { streak++; updateUI(); renderMenus(); renderGrid(); }
+        function manualStreakUpdate(val) { streak = parseInt(val) || 0; updateUI(); renderGrid(); }
+        function increaseStreak() { streak++; updateUI(); renderGrid(); }
 
         window.onload = () => { updateUI(); loadGitHubData(); };
     </script>
     <script>
-    // BLOQUEIO DE INSPEÇÃO E PROTEÇÃO DE IMAGENS
-    
-    // 1. Bloquear Clique Direito
     document.addEventListener('contextmenu', event => event.preventDefault());
-
-    // 2. Bloquear Atalhos de Teclado (F12, Ctrl+Shift+I, Ctrl+U, etc)
     document.onkeydown = function(e) {
-        if (e.keyCode == 123) { return false; } // F12
-        if (e.ctrlKey && e.shiftKey && e.keyCode == 'I'.charCodeAt(0)) { return false; } // Inspect
-        if (e.ctrlKey && e.shiftKey && e.keyCode == 'C'.charCodeAt(0)) { return false; } // Element Select
-        if (e.ctrlKey && e.shiftKey && e.keyCode == 'J'.charCodeAt(0)) { return false; } // Console
-        if (e.ctrlKey && e.keyCode == 'U'.charCodeAt(0)) { return false; } // View Source
+        if (e.keyCode == 123 || (e.ctrlKey && e.shiftKey && (e.keyCode == 73 || e.keyCode == 74 || e.keyCode == 67)) || (e.ctrlKey && e.keyCode == 85)) return false;
     };
-
-    // 3. Impedir Arrastar Imagens (Protege contra abertura em nova aba)
-    document.addEventListener('dragstart', function(e) {
-        if (e.target.nodeName == 'IMG') {
-            e.preventDefault();
-        }
-    }, false);
-
-    // 4. Anti-Debugger (Loop que "pausa" o console se tentarem forçar a abertura)
-    setInterval(function() {
-        (function() {
-            (function a() {
-                try {
-                    (function b(i) {
-                        if (('' + (i / i)).length !== 1 || i % 20 === 0) {
-                            (function() {}).constructor('debugger')();
-                        } else {
-                            debugger;
-                        }
-                        b(++i);
-                    })(0);
-                } catch (e) {}
-            })();
-        })();
-    }, 1000);
-</script>
+    document.addEventListener('dragstart', e => { if (e.target.nodeName == 'IMG') e.preventDefault(); }, false);
+    setInterval(function() { (function() { (function a() { try { (function b(i) { if (('' + (i / i)).length !== 1 || i % 20 === 0) { (function() {}).constructor('debugger')(); } else { debugger; } b(++i); })(0); } catch (e) {} })(); })(); }, 1000);
+    </script>
 </body>
 </html>
