@@ -35,7 +35,7 @@
         .character-container { position: relative; width: 100%; height: 50vh; display: flex; justify-content: center; align-items: center; z-index: 10; }
         @media (min-width: 1024px) { .character-container { height: 100vh; } }
 
-        .character-wrapper { position: relative; width: 280px; height: 280px; transition: transform 0.1s ease-out; border: 2px dashed transparent; }
+        .character-wrapper { position: relative; width: 280px; height: 280px; transition: transform 0.05s ease-out; border: 2px dashed transparent; }
         .character-wrapper.selected { border-color: rgba(255,255,255,0.6); background: rgba(255,255,255,0.05); border-radius: 12px; }
         .character-img { width: 100%; height: 100%; object-fit: contain; pointer-events: none; }
         
@@ -170,7 +170,6 @@
             filtered.forEach(item => {
                 const slot = item.sub || item.categoria;
                 const isSelected = (currentTab === 'pose') ? (currentPoseImg === item.imagem) : (activeAccessories[slot] === item.imagem);
-                
                 const wrapper = document.createElement('div');
                 wrapper.className = `item-card-wrapper ${isSelected ? 'selected' : ''}`;
                 wrapper.onclick = () => {
@@ -178,7 +177,6 @@
                     else toggleAcc(slot, item.imagem);
                     updateUI(); renderGrid();
                 };
-
                 wrapper.innerHTML = `
                     <div class="item-card"><img src="${item.imagem}" class="w-full h-full object-contain"></div>
                     <div class="item-name">${item.nome}</div>
@@ -190,11 +188,10 @@
 
         function updateUI() {
             const info = getStreakInfo();
-            const charImg = document.getElementById('char-img');
             document.getElementById('streak-count').innerText = streak;
             document.getElementById('streak-input').value = streak;
             document.getElementById('streak-count').style.color = info.color;
-            charImg.src = currentPoseImg ? currentPoseImg : info.base;
+            document.getElementById('char-img').src = currentPoseImg ? currentPoseImg : info.base;
             document.getElementById('reset-pos-btn').style.display = 'block';
         }
 
@@ -230,33 +227,32 @@
         function mirrorAcc(slot) {
             const state = accStates[slot];
             state.flip *= -1; 
-            const img = document.getElementById(slot + '-container').querySelector('.acc-content-img');
-            img.style.transform = `scaleX(${state.flip})`;
+            document.getElementById(slot + '-container').querySelector('.acc-content-img').style.transform = `scaleX(${state.flip})`;
         }
 
-        let start = { x: 0, y: 0, isMoving: false, selectedTarget: null };
+        let start = { x: 0, y: 0, dist: 0, angle: 0, isMoving: false, selectedTarget: null };
         const zone = document.getElementById('interaction-zone');
 
-        // Lógica de Scroll do Touchpad (Shift + Scroll para rotacionar)
+        // Notebook Wheel (Zoom e Rotação)
         zone.addEventListener('wheel', (e) => {
             if (!start.selectedTarget) return;
             e.preventDefault();
             let state = (start.selectedTarget === 'char-body') ? charState : accStates[start.selectedTarget];
             let element = (start.selectedTarget === 'char-body') ? zone : document.getElementById(start.selectedTarget + '-container');
-
+            
             if (e.shiftKey) {
-                state.r += e.deltaY * 0.5; // Rotação
+                state.r += e.deltaY * 0.5;
             } else {
-                state.s *= (e.deltaY > 0 ? 0.95 : 1.05); // Zoom
+                state.s *= (e.deltaY > 0 ? 0.9 : 1.1);
             }
             element.style.transform = `translate(${state.x}px, ${state.y}px) scale(${state.s}) rotate(${state.r}deg)`;
         }, { passive: false });
 
-        zone.addEventListener('touchstart', handleStart);
+        zone.addEventListener('touchstart', handleStart, { passive: false });
         zone.addEventListener('mousedown', handleStart);
 
         function handleStart(e) {
-            if (e.target.closest('.control-btn')) return; 
+            if (e.target.closest('.control-btn')) return;
             const isTouch = e.type === 'touchstart';
             const clientX = isTouch ? e.touches[0].clientX : e.clientX;
             const clientY = isTouch ? e.touches[0].clientY : e.clientY;
@@ -278,6 +274,11 @@
             const el = targetId === 'char-body' ? zone : document.getElementById(targetId + '-container');
             el.classList.add('selected');
             start.x = clientX; start.y = clientY;
+
+            if (isTouch && e.touches.length === 2) {
+                start.dist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+                start.angle = Math.atan2(e.touches[1].clientY - e.touches[0].clientY, e.touches[1].clientX - e.touches[0].clientX);
+            }
         }
 
         window.addEventListener('touchmove', handleMove, { passive: false });
@@ -286,16 +287,23 @@
         function handleMove(e) {
             if (!start.isMoving) return;
             const isTouch = e.type === 'touchmove';
-            const clientX = isTouch ? e.touches[0].clientX : e.clientX;
-            const clientY = isTouch ? e.touches[0].clientY : e.clientY;
-
             let state = (start.selectedTarget === 'char-body') ? charState : accStates[start.selectedTarget];
             let element = (start.selectedTarget === 'char-body') ? zone : document.getElementById(start.selectedTarget + '-container');
 
-            state.x += (clientX - start.x);
-            state.y += (clientY - start.y);
-            
-            start.x = clientX; start.y = clientY;
+            if (isTouch && e.touches.length === 2) {
+                e.preventDefault();
+                const d = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+                const a = Math.atan2(e.touches[1].clientY - e.touches[0].clientY, e.touches[1].clientX - e.touches[0].clientX);
+                state.s *= (d / start.dist);
+                state.r += (a - start.angle) * (180 / Math.PI);
+                start.dist = d; start.angle = a;
+            } else {
+                const clientX = isTouch ? e.touches[0].clientX : e.clientX;
+                const clientY = isTouch ? e.touches[0].clientY : e.clientY;
+                state.x += (clientX - start.x);
+                state.y += (clientY - start.y);
+                start.x = clientX; start.y = clientY;
+            }
             element.style.transform = `translate(${state.x}px, ${state.y}px) scale(${state.s}) rotate(${state.r}deg)`;
         }
 
@@ -310,17 +318,13 @@
             } catch (e) { console.error("Erro ao carregar"); }
         }
 
-        // CORREÇÃO DO RESET: Apenas centraliza, não apaga dados nem foguinhos.
         function resetAccPositions() {
             charState = { x: 0, y: 0, s: 1, r: 0, flip: 1 };
             zone.style.transform = `translate(0,0) scale(1) rotate(0)`;
-            
             for (let id in accStates) {
                 accStates[id] = { x: 0, y: 0, s: 1, r: 0, flip: 1 };
                 const el = document.getElementById(id + '-container');
-                if(el) {
-                    el.style.transform = `translate(0,0) scale(1) rotate(0)`;
-                }
+                if(el) el.style.transform = `translate(0,0) scale(1) rotate(0)`;
             }
         }
 
