@@ -87,7 +87,7 @@
         
         #streak-input { background: transparent; color: white; border: none; font-weight: bold; width: 100%; text-align: center; outline: none; }
 
-        /* NOVO DESIGN DO BOTÃO DE INFORMAÇÃO */
+        /* DESIGN DO BOTÃO DE INFORMAÇÃO */
         .info-btn { 
             position: absolute; top: -18px; left: 10px; 
             width: 32px; height: 32px; background: #1A1A1A; 
@@ -98,7 +98,7 @@
         }
         .info-btn:hover { background: #333; transform: scale(1.1); border-color: white; }
 
-        /* DESIGN DO MODAL BASEADO NA IMAGEM 2 */
+        /* DESIGN DO MODAL BASEADO NA SUA IMAGEM */
         .info-modal {
             position: fixed; inset: 0; background: rgba(0,0,0,0.85);
             display: none; align-items: center; justify-content: center;
@@ -124,9 +124,9 @@
 
     <div id="infoModal" class="info-modal" onclick="closeModal()">
         <div class="modal-card" onclick="event.stopPropagation()">
-            <h2>Streak Studio v2.0</h2>
-            <p>Personalize seu foguinho, adicione acessórios e mantenha sua sequência ativa! <br><br> Use as ferramentas de escala e rotação para deixar seu avatar único.</p>
-            <button class="modal-close-btn" onclick="closeModal()">Entendido</button>
+            <h2>Informações</h2>
+            <p>Personalize seu foguinho e mantenha sua sequência! <br><br> Bugs corrigidos e novas funcionalidades adicionadas para melhorar sua experiência.</p>
+            <button class="modal-close-btn" onclick="closeModal()">FECHAR</button>
         </div>
     </div>
 
@@ -155,7 +155,6 @@
 
     <aside class="sidebar" onclick="event.stopPropagation()">
         <div class="px-5 py-6 flex gap-2 border-b border-white/10 relative">
-            
             <div class="info-btn" onclick="openModal()">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="white" stroke-width="2.5"/>
@@ -163,7 +162,6 @@
                     <path d="M12 8H12.01" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
                 </svg>
             </div>
-
             <button onclick="increaseStreak()" class="flex-1 bg-white text-black font-black py-4 rounded-xl uppercase italic text-xs hover:bg-gray-200 cursor-pointer">Mandar Foguinho 🔥</button>
             <div class="w-14 h-14 flex items-center justify-center rounded-xl bg-[#1A1A1A] text-white font-bold text-lg border border-white/5">
                 <input type="number" id="streak-input" value="3" oninput="manualStreakUpdate(this.value)">
@@ -176,17 +174,8 @@
     </aside>
 
     <script>
-        // FUNÇÕES DO MODAL
         function openModal() { document.getElementById('infoModal').classList.add('active'); }
         function closeModal() { document.getElementById('infoModal').classList.remove('active'); }
-
-        // Bloqueio de Inspeção
-        document.addEventListener('contextmenu', event => event.preventDefault());
-        document.onkeydown = function(e) {
-            if (e.keyCode == 123) return false;
-            if (e.ctrlKey && e.shiftKey && (e.keyCode == 'I'.charCodeAt(0) || e.keyCode == 'J'.charCodeAt(0) || e.keyCode == 'C'.charCodeAt(0))) return false;
-            if (e.ctrlKey && e.keyCode == 'U'.charCodeAt(0)) return false;
-        };
 
         const GITHUB_JSON_URL = "https://raw.githubusercontent.com/bytechoficial/steak-studio-data/refs/heads/main/itens.json";
 
@@ -200,6 +189,14 @@
         let currentPoseImg = null;
         let history = [];
         let historyStep = -1;
+
+        async function loadGitHubData() {
+            try {
+                const response = await fetch(GITHUB_JSON_URL + "?t=" + new Date().getTime());
+                todosOsItens = await response.json();
+                renderTabs(); renderMenus(); renderGrid(); saveHistory();
+            } catch (e) { console.error("Erro ao carregar os itens do GitHub", e); }
+        }
 
         function deselectAll(e) {
             if (e.target.id === 'canvas-area' || e.target.classList.contains('character-container')) {
@@ -409,25 +406,6 @@
 
         window.addEventListener('mouseup', () => { if(start.isMoving) saveHistory(); start.isMoving = false; });
         window.addEventListener('touchend', () => { if(start.isMoving) saveHistory(); start.isMoving = false; });
-
-        async function loadGitHubData() {
-            try {
-                const response = await fetch(GITHUB_JSON_URL + "?t=" + new Date().getTime());
-                todosOsItens = await response.json();
-                renderTabs(); renderMenus(); renderGrid(); saveHistory();
-            } catch (e) { console.error("Erro ao carregar"); }
-        }
-
-        function resetAccPositions() {
-            charState = { x: 0, y: 0, s: 1, r: 0, flip: 1 };
-            zone.style.transform = `translate(0,0) scale(1) rotate(0)`;
-            for (let id in accStates) {
-                accStates[id] = { x: 0, y: 0, s: 1, r: 0, flip: 1 };
-                const el = document.getElementById(id + '-container');
-                if(el) el.style.transform = `translate(0,0) scale(1) rotate(0)`;
-            }
-            saveHistory();
-        }
 
         function manualStreakUpdate(val) { streak = parseInt(val) || 0; updateUI(); renderMenus(); renderGrid(); }
         function increaseStreak() { streak++; updateUI(); renderMenus(); renderGrid(); }
