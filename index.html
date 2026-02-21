@@ -21,6 +21,15 @@
             height: 100vh;
         }
 
+        /* Bloqueia ícones de utilitários de navegadores (como Edge Visual Search) */
+        img {
+            pointer-events: none;
+            -webkit-user-drag: none;
+        }
+        .draggable-acc img, .character-img {
+            pointer-events: none !important;
+        }
+
         @media (min-width: 1024px) {
             body { flex-direction: row; }
             .main-canvas { flex: 1; height: 100vh; position: relative; }
@@ -119,6 +128,14 @@
     </aside>
 
     <script>
+        // Bloqueio de Inspeção e Menu de Contexto
+        document.addEventListener('contextmenu', event => event.preventDefault());
+        document.onkeydown = function(e) {
+            if (e.keyCode == 123) return false; // F12
+            if (e.ctrlKey && e.shiftKey && (e.keyCode == 'I'.charCodeAt(0) || e.keyCode == 'J'.charCodeAt(0) || e.keyCode == 'C'.charCodeAt(0))) return false;
+            if (e.ctrlKey && e.keyCode == 'U'.charCodeAt(0)) return false; // Ctrl+U
+        };
+
         const GITHUB_JSON_URL = "https://raw.githubusercontent.com/bytechoficial/steak-studio-data/refs/heads/main/itens.json";
 
         let streak = 3;
