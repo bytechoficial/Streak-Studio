@@ -65,13 +65,15 @@
         .content-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; padding: 16px; flex: 1; overflow-y: auto; align-content: start; }
         @media (max-width: 1023px) { .content-grid { grid-template-columns: repeat(3, 1fr); height: 260px; } }
 
+        .action-btn { background: #222; color: white; font-size: 9px; font-weight: 900; padding: 6px 10px; border-radius: 8px; text-transform: uppercase; cursor: pointer; border: 1px solid rgba(255,255,255,0.1); }
+        .action-btn:hover { background: #333; }
+        
         .item-card-wrapper { display: flex; flex-direction: column; gap: 6px; align-items: center; text-align: center; cursor: pointer; }
         .item-card { background: #FFFFFF; border-radius: 12px; width: 100%; aspect-ratio: 1/1; display: flex; align-items: center; justify-content: center; border: 2px solid transparent; padding: 10px; }
         .item-card-wrapper.selected .item-card { border-color: #3b82f6; border-width: 3px; }
         .item-name { font-size: 10px; font-weight: 800; color: white; width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .item-author { font-size: 8px; font-weight: 500; color: #666; text-transform: uppercase; letter-spacing: 0.5px; }
         
-        #reset-pos-btn { display: none; margin-top: 8px; background: #ff4444; color: white; font-size: 9px; font-weight: 900; padding: 6px 12px; border-radius: 8px; text-transform: uppercase; cursor: pointer; }
         #streak-input { background: transparent; color: white; border: none; font-weight: bold; width: 100%; text-align: center; outline: none; }
     </style>
 </head>
@@ -80,10 +82,16 @@
     <main class="main-canvas">
         <header class="p-6 flex justify-between items-start absolute top-0 left-0 w-full z-[100]">
             <h1 class="title-3d text-2xl">Streak Studio</h1>
-            <div class="text-right flex flex-col items-end">
-                <span id="streak-count" class="text-4xl font-black italic leading-none">3</span>
-                <span class="text-[9px] font-bold uppercase tracking-wider text-gray-400 mt-1">Dias de sequência</span>
-                <button id="reset-pos-btn" onclick="resetAccPositions()">Resetar Posição 🛠️</button>
+            <div class="text-right flex flex-col items-end gap-2">
+                <div class="flex flex-col items-end">
+                    <span id="streak-count" class="text-4xl font-black italic leading-none">3</span>
+                    <span class="text-[9px] font-bold uppercase tracking-wider text-gray-400 mt-1">Dias de sequência</span>
+                </div>
+                <div class="flex gap-2">
+                    <button class="action-btn" onclick="undo()">Undo ↩️</button>
+                    <button class="action-btn" onclick="redo()">Redo ↪️</button>
+                    <button class="action-btn !bg-red-600" onclick="resetAccPositions()">Reset 🛠️</button>
+                </div>
             </div>
         </header>
 
@@ -118,6 +126,62 @@
         let accStates = {}; 
         let charState = { x: 0, y: 0, s: 1, r: 0, flip: 1 }; 
         let currentPoseImg = null;
+
+        // Histórico para Undo/Redo
+        let history = [];
+        let historyStep = -1;
+
+        function saveHistory() {
+            const state = JSON.stringify({
+                activeAccessories,
+                accStates,
+                charState,
+                currentPoseImg
+            });
+            if (historyStep < history.length - 1) history = history.slice(0, historyStep + 1);
+            history.push(state);
+            if (history.length > 50) history.shift();
+            else historyStep++;
+        }
+
+        function undo() {
+            if (historyStep > 0) {
+                historyStep--;
+                applyHistoryState(JSON.parse(history[historyStep]));
+            }
+        }
+
+        function redo() {
+            if (historyStep < history.length - 1) {
+                historyStep++;
+                applyHistoryState(JSON.parse(history[historyStep]));
+            }
+        }
+
+        function applyHistoryState(state) {
+            activeAccessories = state.activeAccessories;
+            accStates = state.accStates;
+            charState = state.charState;
+            currentPoseImg = state.currentPoseImg;
+            
+            // Limpar containers antigos e recriar baseados no estado
+            document.querySelectorAll('.draggable-acc').forEach(el => el.classList.remove('active'));
+            for (let slot in activeAccessories) {
+                if (activeAccessories[slot]) {
+                    toggleAcc(slot, activeAccessories[slot], true);
+                    const el = document.getElementById(slot + '-container');
+                    const s = accStates[slot];
+                    if(el) {
+                        el.style.transform = `translate(${s.x}px, ${s.y}px) scale(${s.s}) rotate(${s.r}deg)`;
+                        el.querySelector('img').style.transform = `scaleX(${s.flip})`;
+                    }
+                }
+            }
+            const zone = document.getElementById('interaction-zone');
+            zone.style.transform = `translate(${charState.x}px, ${charState.y}px) scale(${charState.s}) rotate(${charState.r}deg)`;
+            updateUI();
+            renderGrid();
+        }
 
         function getStreakInfo() {
             if (streak >= 199) return { color: '#3b82f6', base: 'fogo_azul.png', id: 'azul' };
@@ -175,7 +239,7 @@
                 wrapper.onclick = () => {
                     if (currentTab === 'pose') currentPoseImg = (currentPoseImg === item.imagem) ? null : item.imagem;
                     else toggleAcc(slot, item.imagem);
-                    updateUI(); renderGrid();
+                    saveHistory(); updateUI(); renderGrid();
                 };
                 wrapper.innerHTML = `
                     <div class="item-card"><img src="${item.imagem}" class="w-full h-full object-contain"></div>
@@ -192,12 +256,11 @@
             document.getElementById('streak-input').value = streak;
             document.getElementById('streak-count').style.color = info.color;
             document.getElementById('char-img').src = currentPoseImg ? currentPoseImg : info.base;
-            document.getElementById('reset-pos-btn').style.display = 'block';
         }
 
-        function toggleAcc(slot, img) {
+        function toggleAcc(slot, img, skipHistory = false) {
             let container = document.getElementById(slot + '-container');
-            if (activeAccessories[slot] === img) {
+            if (!skipHistory && activeAccessories[slot] === img) {
                 removeAcc(slot);
             } else {
                 activeAccessories[slot] = img;
@@ -211,7 +274,7 @@
                         <img src="${img}" class="acc-content-img w-full h-full object-contain">
                     `;
                     document.getElementById('interaction-zone').appendChild(container);
-                    accStates[slot] = { x: 0, y: 0, s: 1, r: 0, flip: 1 };
+                    if (!accStates[slot]) accStates[slot] = { x: 0, y: 0, s: 1, r: 0, flip: 1 };
                 } else { container.querySelector('img').src = img; }
                 container.classList.add('active');
             }
@@ -221,19 +284,20 @@
             activeAccessories[slot] = null;
             const container = document.getElementById(slot + '-container');
             if(container) container.classList.remove('active', 'selected');
-            updateUI(); renderGrid();
+            saveHistory(); updateUI(); renderGrid();
         }
 
         function mirrorAcc(slot) {
             const state = accStates[slot];
             state.flip *= -1; 
             document.getElementById(slot + '-container').querySelector('.acc-content-img').style.transform = `scaleX(${state.flip})`;
+            saveHistory();
         }
 
         let start = { x: 0, y: 0, dist: 0, angle: 0, isMoving: false, selectedTarget: null };
         const zone = document.getElementById('interaction-zone');
 
-        // Notebook Wheel (Zoom e Rotação)
+        // Notebook Wheel (Rotação e Zoom Fixos)
         zone.addEventListener('wheel', (e) => {
             if (!start.selectedTarget) return;
             e.preventDefault();
@@ -241,9 +305,11 @@
             let element = (start.selectedTarget === 'char-body') ? zone : document.getElementById(start.selectedTarget + '-container');
             
             if (e.shiftKey) {
-                state.r += e.deltaY * 0.5;
+                // Rotação: Detecta scroll vertical ou horizontal com Shift
+                const rotationAmount = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
+                state.r += rotationAmount * 0.5;
             } else {
-                state.s *= (e.deltaY > 0 ? 0.9 : 1.1);
+                state.s *= (e.deltaY > 0 ? 0.95 : 1.05);
             }
             element.style.transform = `translate(${state.x}px, ${state.y}px) scale(${state.s}) rotate(${state.r}deg)`;
         }, { passive: false });
@@ -307,14 +373,15 @@
             element.style.transform = `translate(${state.x}px, ${state.y}px) scale(${state.s}) rotate(${state.r}deg)`;
         }
 
-        window.addEventListener('mouseup', () => start.isMoving = false);
-        window.addEventListener('touchend', () => start.isMoving = false);
+        window.addEventListener('mouseup', () => { if(start.isMoving) saveHistory(); start.isMoving = false; });
+        window.addEventListener('touchend', () => { if(start.isMoving) saveHistory(); start.isMoving = false; });
 
         async function loadGitHubData() {
             try {
                 const response = await fetch(GITHUB_JSON_URL + "?t=" + new Date().getTime());
                 todosOsItens = await response.json();
                 renderTabs(); renderMenus(); renderGrid();
+                saveHistory();
             } catch (e) { console.error("Erro ao carregar"); }
         }
 
@@ -326,6 +393,7 @@
                 const el = document.getElementById(id + '-container');
                 if(el) el.style.transform = `translate(0,0) scale(1) rotate(0)`;
             }
+            saveHistory();
         }
 
         function manualStreakUpdate(val) { streak = parseInt(val) || 0; updateUI(); renderMenus(); renderGrid(); }
