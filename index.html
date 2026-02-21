@@ -26,7 +26,6 @@
             height: 100vh;
         }
 
-        /* Bloqueia ícones de utilitários de navegadores */
         img {
             pointer-events: none;
             -webkit-user-drag: none;
@@ -141,6 +140,7 @@
             if (e.ctrlKey && e.keyCode == 'U'.charCodeAt(0)) return false;
         };
 
+        // URL DO JSON NO GITHUB
         const GITHUB_JSON_URL = "https://raw.githubusercontent.com/bytechoficial/steak-studio-data/refs/heads/main/itens.json";
 
         let streak = 3;
