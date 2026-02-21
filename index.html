@@ -62,12 +62,15 @@
         .sub-tab-btn { font-size: 10px; font-weight: 800; text-transform: uppercase; color: #fff; padding: 5px 12px; border-radius: 20px; background: #1A1A1A; border: 1px solid transparent; white-space: nowrap; cursor: pointer; }
         .sub-tab-btn.active { background: #333; border-color: #555; }
 
+        .action-group { display: flex; gap: 8px; }
+        @media (max-width: 1023px) { .action-group { flex-direction: column; align-items: flex-end; } }
+
+        .action-btn { background: #222; color: white; font-size: 9px; font-weight: 900; padding: 6px 10px; border-radius: 8px; text-transform: uppercase; cursor: pointer; border: 1px solid rgba(255,255,255,0.1); width: 80px; text-align: center; }
+        .action-btn:hover { background: #333; }
+        
         .content-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; padding: 16px; flex: 1; overflow-y: auto; align-content: start; }
         @media (max-width: 1023px) { .content-grid { grid-template-columns: repeat(3, 1fr); height: 260px; } }
 
-        .action-btn { background: #222; color: white; font-size: 9px; font-weight: 900; padding: 6px 10px; border-radius: 8px; text-transform: uppercase; cursor: pointer; border: 1px solid rgba(255,255,255,0.1); }
-        .action-btn:hover { background: #333; }
-        
         .item-card-wrapper { display: flex; flex-direction: column; gap: 6px; align-items: center; text-align: center; cursor: pointer; }
         .item-card { background: #FFFFFF; border-radius: 12px; width: 100%; aspect-ratio: 1/1; display: flex; align-items: center; justify-content: center; border: 2px solid transparent; padding: 10px; }
         .item-card-wrapper.selected .item-card { border-color: #3b82f6; border-width: 3px; }
@@ -77,20 +80,20 @@
         #streak-input { background: transparent; color: white; border: none; font-weight: bold; width: 100%; text-align: center; outline: none; }
     </style>
 </head>
-<body>
+<body onclick="deselectAll(event)">
 
-    <main class="main-canvas">
+    <main class="main-canvas" id="canvas-area">
         <header class="p-6 flex justify-between items-start absolute top-0 left-0 w-full z-[100]">
             <h1 class="title-3d text-2xl">Streak Studio</h1>
-            <div class="text-right flex flex-col items-end gap-2">
+            <div class="text-right flex flex-col items-end gap-3">
                 <div class="flex flex-col items-end">
                     <span id="streak-count" class="text-4xl font-black italic leading-none">3</span>
                     <span class="text-[9px] font-bold uppercase tracking-wider text-gray-400 mt-1">Dias de sequência</span>
                 </div>
-                <div class="flex gap-2">
-                    <button class="action-btn" onclick="undo()">Undo ↩️</button>
-                    <button class="action-btn" onclick="redo()">Redo ↪️</button>
-                    <button class="action-btn !bg-red-600" onclick="resetAccPositions()">Reset 🛠️</button>
+                <div class="action-group">
+                    <button class="action-btn" onclick="undo(); event.stopPropagation();">Undo ↩️</button>
+                    <button class="action-btn" onclick="redo(); event.stopPropagation();">Redo ↪️</button>
+                    <button class="action-btn !bg-red-600" onclick="resetAccPositions(); event.stopPropagation();">Reset 🛠️</button>
                 </div>
             </div>
         </header>
@@ -102,7 +105,7 @@
         </div>
     </main>
 
-    <aside class="sidebar">
+    <aside class="sidebar" onclick="event.stopPropagation()">
         <div class="px-5 py-6 flex gap-2 border-b border-white/10">
             <button onclick="increaseStreak()" class="flex-1 bg-white text-black font-black py-4 rounded-xl uppercase italic text-xs hover:bg-gray-200 cursor-pointer">Mandar Foguinho 🔥</button>
             <div class="w-14 h-14 flex items-center justify-center rounded-xl bg-[#1A1A1A] text-white font-bold text-lg border border-white/5">
@@ -127,44 +130,31 @@
         let charState = { x: 0, y: 0, s: 1, r: 0, flip: 1 }; 
         let currentPoseImg = null;
 
-        // Histórico para Undo/Redo
         let history = [];
         let historyStep = -1;
 
+        function deselectAll(e) {
+            if (e.target.id === 'canvas-area' || e.target.classList.contains('character-container')) {
+                document.querySelectorAll('.draggable-acc, .character-wrapper').forEach(el => el.classList.remove('selected'));
+                start.selectedTarget = null;
+            }
+        }
+
         function saveHistory() {
-            const state = JSON.stringify({
-                activeAccessories,
-                accStates,
-                charState,
-                currentPoseImg
-            });
+            const state = JSON.stringify({ activeAccessories, accStates, charState, currentPoseImg });
             if (historyStep < history.length - 1) history = history.slice(0, historyStep + 1);
             history.push(state);
-            if (history.length > 50) history.shift();
-            else historyStep++;
+            if (history.length > 50) history.shift(); else historyStep++;
         }
 
-        function undo() {
-            if (historyStep > 0) {
-                historyStep--;
-                applyHistoryState(JSON.parse(history[historyStep]));
-            }
-        }
-
-        function redo() {
-            if (historyStep < history.length - 1) {
-                historyStep++;
-                applyHistoryState(JSON.parse(history[historyStep]));
-            }
-        }
+        function undo() { if (historyStep > 0) { historyStep--; applyHistoryState(JSON.parse(history[historyStep])); } }
+        function redo() { if (historyStep < history.length - 1) { historyStep++; applyHistoryState(JSON.parse(history[historyStep])); } }
 
         function applyHistoryState(state) {
             activeAccessories = state.activeAccessories;
             accStates = state.accStates;
             charState = state.charState;
             currentPoseImg = state.currentPoseImg;
-            
-            // Limpar containers antigos e recriar baseados no estado
             document.querySelectorAll('.draggable-acc').forEach(el => el.classList.remove('active'));
             for (let slot in activeAccessories) {
                 if (activeAccessories[slot]) {
@@ -179,8 +169,7 @@
             }
             const zone = document.getElementById('interaction-zone');
             zone.style.transform = `translate(${charState.x}px, ${charState.y}px) scale(${charState.s}) rotate(${charState.r}deg)`;
-            updateUI();
-            renderGrid();
+            updateUI(); renderGrid();
         }
 
         function getStreakInfo() {
@@ -236,16 +225,13 @@
                 const isSelected = (currentTab === 'pose') ? (currentPoseImg === item.imagem) : (activeAccessories[slot] === item.imagem);
                 const wrapper = document.createElement('div');
                 wrapper.className = `item-card-wrapper ${isSelected ? 'selected' : ''}`;
-                wrapper.onclick = () => {
+                wrapper.onclick = (e) => {
+                    e.stopPropagation();
                     if (currentTab === 'pose') currentPoseImg = (currentPoseImg === item.imagem) ? null : item.imagem;
                     else toggleAcc(slot, item.imagem);
                     saveHistory(); updateUI(); renderGrid();
                 };
-                wrapper.innerHTML = `
-                    <div class="item-card"><img src="${item.imagem}" class="w-full h-full object-contain"></div>
-                    <div class="item-name">${item.nome}</div>
-                    <div class="item-author">${item.autor || item.author || 'BY TECH'}</div>
-                `;
+                wrapper.innerHTML = `<div class="item-card"><img src="${item.imagem}" class="w-full h-full object-contain"></div><div class="item-name">${item.nome}</div><div class="item-author">${item.autor || item.author || 'BY TECH'}</div>`;
                 grid.appendChild(wrapper);
             });
         }
@@ -260,19 +246,13 @@
 
         function toggleAcc(slot, img, skipHistory = false) {
             let container = document.getElementById(slot + '-container');
-            if (!skipHistory && activeAccessories[slot] === img) {
-                removeAcc(slot);
-            } else {
+            if (!skipHistory && activeAccessories[slot] === img) { removeAcc(slot); } else {
                 activeAccessories[slot] = img;
                 if (!container) {
                     container = document.createElement('div');
                     container.id = slot + '-container';
                     container.className = 'draggable-acc';
-                    container.innerHTML = `
-                        <div class="control-btn trash-btn" onclick="removeAcc('${slot}')">🗑️</div>
-                        <div class="control-btn mirror-btn" onclick="mirrorAcc('${slot}')">↔️</div>
-                        <img src="${img}" class="acc-content-img w-full h-full object-contain">
-                    `;
+                    container.innerHTML = `<div class="control-btn trash-btn" onclick="removeAcc('${slot}')">🗑️</div><div class="control-btn mirror-btn" onclick="mirrorAcc('${slot}')">↔️</div><img src="${img}" class="acc-content-img w-full h-full object-contain">`;
                     document.getElementById('interaction-zone').appendChild(container);
                     if (!accStates[slot]) accStates[slot] = { x: 0, y: 0, s: 1, r: 0, flip: 1 };
                 } else { container.querySelector('img').src = img; }
@@ -297,20 +277,12 @@
         let start = { x: 0, y: 0, dist: 0, angle: 0, isMoving: false, selectedTarget: null };
         const zone = document.getElementById('interaction-zone');
 
-        // Notebook Wheel (Rotação e Zoom Fixos)
         zone.addEventListener('wheel', (e) => {
             if (!start.selectedTarget) return;
             e.preventDefault();
             let state = (start.selectedTarget === 'char-body') ? charState : accStates[start.selectedTarget];
             let element = (start.selectedTarget === 'char-body') ? zone : document.getElementById(start.selectedTarget + '-container');
-            
-            if (e.shiftKey) {
-                // Rotação: Detecta scroll vertical ou horizontal com Shift
-                const rotationAmount = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
-                state.r += rotationAmount * 0.5;
-            } else {
-                state.s *= (e.deltaY > 0 ? 0.95 : 1.05);
-            }
+            if (e.shiftKey) { state.r += (e.deltaY + e.deltaX) * 0.5; } else { state.s *= (e.deltaY > 0 ? 0.95 : 1.05); }
             element.style.transform = `translate(${state.x}px, ${state.y}px) scale(${state.s}) rotate(${state.r}deg)`;
         }, { passive: false });
 
@@ -319,13 +291,12 @@
 
         function handleStart(e) {
             if (e.target.closest('.control-btn')) return;
+            e.stopPropagation();
             const isTouch = e.type === 'touchstart';
             const clientX = isTouch ? e.touches[0].clientX : e.clientX;
             const clientY = isTouch ? e.touches[0].clientY : e.clientY;
-
             let targetId = null; let minDist = 80; 
             document.querySelectorAll('.draggable-acc, .character-wrapper').forEach(el => el.classList.remove('selected'));
-
             for (let id in activeAccessories) {
                 if (!activeAccessories[id]) continue;
                 const el = document.getElementById(id + '-container');
@@ -335,12 +306,10 @@
                 if (d < minDist) { minDist = d; targetId = id; }
             }
             if (!targetId) targetId = 'char-body';
-
             start.selectedTarget = targetId; start.isMoving = true;
             const el = targetId === 'char-body' ? zone : document.getElementById(targetId + '-container');
             el.classList.add('selected');
             start.x = clientX; start.y = clientY;
-
             if (isTouch && e.touches.length === 2) {
                 start.dist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
                 start.angle = Math.atan2(e.touches[1].clientY - e.touches[0].clientY, e.touches[1].clientX - e.touches[0].clientX);
@@ -355,19 +324,16 @@
             const isTouch = e.type === 'touchmove';
             let state = (start.selectedTarget === 'char-body') ? charState : accStates[start.selectedTarget];
             let element = (start.selectedTarget === 'char-body') ? zone : document.getElementById(start.selectedTarget + '-container');
-
             if (isTouch && e.touches.length === 2) {
                 e.preventDefault();
                 const d = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
                 const a = Math.atan2(e.touches[1].clientY - e.touches[0].clientY, e.touches[1].clientX - e.touches[0].clientX);
-                state.s *= (d / start.dist);
-                state.r += (a - start.angle) * (180 / Math.PI);
+                state.s *= (d / start.dist); state.r += (a - start.angle) * (180 / Math.PI);
                 start.dist = d; start.angle = a;
             } else {
                 const clientX = isTouch ? e.touches[0].clientX : e.clientX;
                 const clientY = isTouch ? e.touches[0].clientY : e.clientY;
-                state.x += (clientX - start.x);
-                state.y += (clientY - start.y);
+                state.x += (clientX - start.x); state.y += (clientY - start.y);
                 start.x = clientX; start.y = clientY;
             }
             element.style.transform = `translate(${state.x}px, ${state.y}px) scale(${state.s}) rotate(${state.r}deg)`;
@@ -380,8 +346,7 @@
             try {
                 const response = await fetch(GITHUB_JSON_URL + "?t=" + new Date().getTime());
                 todosOsItens = await response.json();
-                renderTabs(); renderMenus(); renderGrid();
-                saveHistory();
+                renderTabs(); renderMenus(); renderGrid(); saveHistory();
             } catch (e) { console.error("Erro ao carregar"); }
         }
 
