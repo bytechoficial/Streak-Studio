@@ -87,46 +87,61 @@
         
         #streak-input { background: transparent; color: white; border: none; font-weight: bold; width: 100%; text-align: center; outline: none; }
 
-        /* DESIGN DO BOTÃO DE INFORMAÇÃO */
+        /* AJUSTE DO BOTÃO DE INFORMAÇÃO (MAIS PARA BAIXO E VISÍVEL) */
         .info-btn { 
-            position: absolute; top: -18px; left: 10px; 
-            width: 32px; height: 32px; background: #1A1A1A; 
-            border: 1px solid rgba(255,255,255,0.2); border-radius: 50%;
-            display: flex; align-items: center; justify-content: center;
-            cursor: pointer; z-index: 110; transition: all 0.2s;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            position: absolute; 
+            top: 12px; /* Movido para baixo */
+            left: 12px; 
+            width: 36px; 
+            height: 36px; 
+            background: #1A1A1A; 
+            border: 2px solid rgba(255,255,255,0.3); 
+            border-radius: 50%;
+            display: flex; 
+            align-items: center; 
+            justify-content: center;
+            cursor: pointer; 
+            z-index: 150; 
+            transition: all 0.2s;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.6);
         }
         .info-btn:hover { background: #333; transform: scale(1.1); border-color: white; }
 
-        /* DESIGN DO MODAL BASEADO NA SUA IMAGEM */
+        /* MODAL ESTILIZADO */
         .info-modal {
-            position: fixed; inset: 0; background: rgba(0,0,0,0.85);
+            position: fixed; inset: 0; background: rgba(0,0,0,0.9);
             display: none; align-items: center; justify-content: center;
-            z-index: 2000; backdrop-filter: blur(5px);
+            z-index: 2000; backdrop-filter: blur(8px);
         }
         .info-modal.active { display: flex; }
         .modal-card {
-            background: #111; width: 90%; max-width: 400px;
-            border-radius: 28px; border: 1px solid rgba(255,255,255,0.1);
-            padding: 32px; text-align: center; box-shadow: 0 20px 50px rgba(0,0,0,0.8);
+            background: #111; width: 90%; max-width: 420px;
+            border-radius: 30px; border: 1px solid rgba(255,255,255,0.1);
+            padding: 30px; text-align: center; box-shadow: 0 25px 60px rgba(0,0,0,0.9);
         }
-        .modal-card h2 { font-weight: 900; font-size: 22px; text-transform: uppercase; margin-bottom: 12px; font-style: italic; }
-        .modal-card p { color: #888; font-size: 14px; line-height: 1.6; margin-bottom: 24px; }
-        .modal-close-btn {
-            background: white; color: black; width: 100%; padding: 14px;
-            border-radius: 14px; font-weight: 900; text-transform: uppercase;
-            font-size: 13px; cursor: pointer; transition: opacity 0.2s;
+        .modal-img-container { width: 100%; border-radius: 20px; overflow: hidden; margin-bottom: 20px; background: #1A1A1A; }
+        .modal-card h2 { font-weight: 900; font-size: 24px; text-transform: uppercase; margin-bottom: 8px; font-style: italic; letter-spacing: -1px; }
+        .modal-card p { color: #aaa; font-size: 15px; line-height: 1.5; margin-bottom: 25px; }
+        .modal-action-btn {
+            background: white; color: black; width: 100%; padding: 16px;
+            border-radius: 15px; font-weight: 900; text-transform: uppercase;
+            font-size: 14px; cursor: pointer; transition: transform 0.1s; margin-bottom: 12px;
         }
-        .modal-close-btn:hover { opacity: 0.9; }
+        .modal-action-btn:active { transform: scale(0.98); }
+        .modal-close-text { color: #555; font-size: 12px; font-weight: 700; text-transform: uppercase; cursor: pointer; letter-spacing: 1px; }
+        .modal-close-text:hover { color: white; }
     </style>
 </head>
 <body onclick="deselectAll(event)">
 
     <div id="infoModal" class="info-modal" onclick="closeModal()">
         <div class="modal-card" onclick="event.stopPropagation()">
-            <h2>Informações</h2>
-            <p>Personalize seu foguinho e mantenha sua sequência! <br><br> Bugs corrigidos e novas funcionalidades adicionadas para melhorar sua experiência.</p>
-            <button class="modal-close-btn" onclick="closeModal()">FECHAR</button>
+            <div class="modal-img-container" id="modal-image-area">
+                </div>
+            <h2 id="modal-title">Carregando...</h2>
+            <p id="modal-desc">Buscando informações da última atualização...</p>
+            <button class="modal-action-btn" id="modal-btn-text" onclick="window.location.reload()">ATUALIZAR APP</button>
+            <div class="modal-close-text" onclick="closeModal()">FECHAR</div>
         </div>
     </div>
 
@@ -155,14 +170,16 @@
 
     <aside class="sidebar" onclick="event.stopPropagation()">
         <div class="px-5 py-6 flex gap-2 border-b border-white/10 relative">
-            <div class="info-btn" onclick="openModal()">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            
+            <div class="info-btn" onclick="openInfoModal()">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="white" stroke-width="2.5"/>
                     <path d="M12 16V12" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
                     <path d="M12 8H12.01" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
                 </svg>
             </div>
-            <button onclick="increaseStreak()" class="flex-1 bg-white text-black font-black py-4 rounded-xl uppercase italic text-xs hover:bg-gray-200 cursor-pointer">Mandar Foguinho 🔥</button>
+
+            <button onclick="increaseStreak()" class="ml-10 flex-1 bg-white text-black font-black py-4 rounded-xl uppercase italic text-xs hover:bg-gray-200 cursor-pointer">Mandar Foguinho 🔥</button>
             <div class="w-14 h-14 flex items-center justify-center rounded-xl bg-[#1A1A1A] text-white font-bold text-lg border border-white/5">
                 <input type="number" id="streak-input" value="3" oninput="manualStreakUpdate(this.value)">
             </div>
@@ -174,11 +191,37 @@
     </aside>
 
     <script>
-        function openModal() { document.getElementById('infoModal').classList.add('active'); }
+        const GITHUB_JSON_URL = "https://raw.githubusercontent.com/bytechoficial/steak-studio-data/refs/heads/main/itens.json";
+        const GITHUB_INFO_URL = "https://raw.githubusercontent.com/bytechoficial/steak-studio-data/refs/heads/main/info.json";
+
+        // FUNÇÃO PARA BUSCAR INFO.JSON E ABRIR MODAL
+        async function openInfoModal() {
+            const modal = document.getElementById('infoModal');
+            try {
+                const response = await fetch(GITHUB_INFO_URL + "?t=" + new Date().getTime());
+                const data = await response.json();
+                
+                document.getElementById('modal-title').innerText = data.titulo || "NOVA ATUALIZAÇÃO!";
+                document.getElementById('modal-desc').innerHTML = data.descricao || "Bugs corrigidos e funcionalidades adicionadas.";
+                document.getElementById('modal-btn-text').innerText = data.texto_botao || "ATUALIZAR APP";
+                
+                if (data.imagem) {
+                    document.getElementById('modal-image-area').innerHTML = `<img src="${data.imagem}" class="w-full object-cover">`;
+                }
+                
+                modal.classList.add('active');
+            } catch (e) {
+                console.error("Erro ao carregar info.json", e);
+                // Fallback caso o JSON falhe
+                document.getElementById('modal-title').innerText = "ERRO DE CONEXÃO";
+                document.getElementById('modal-desc').innerText = "Não foi possível carregar as informações do servidor.";
+                modal.classList.add('active');
+            }
+        }
+
         function closeModal() { document.getElementById('infoModal').classList.remove('active'); }
 
-        const GITHUB_JSON_URL = "https://raw.githubusercontent.com/bytechoficial/steak-studio-data/refs/heads/main/itens.json";
-
+        // --- RESTANTE DO SEU SCRIPT ORIGINAL MANTIDO ---
         let streak = 3;
         let activeAccessories = {}; 
         let currentTab = ''; 
@@ -189,14 +232,6 @@
         let currentPoseImg = null;
         let history = [];
         let historyStep = -1;
-
-        async function loadGitHubData() {
-            try {
-                const response = await fetch(GITHUB_JSON_URL + "?t=" + new Date().getTime());
-                todosOsItens = await response.json();
-                renderTabs(); renderMenus(); renderGrid(); saveHistory();
-            } catch (e) { console.error("Erro ao carregar os itens do GitHub", e); }
-        }
 
         function deselectAll(e) {
             if (e.target.id === 'canvas-area' || e.target.classList.contains('character-container')) {
@@ -406,6 +441,25 @@
 
         window.addEventListener('mouseup', () => { if(start.isMoving) saveHistory(); start.isMoving = false; });
         window.addEventListener('touchend', () => { if(start.isMoving) saveHistory(); start.isMoving = false; });
+
+        async function loadGitHubData() {
+            try {
+                const response = await fetch(GITHUB_JSON_URL + "?t=" + new Date().getTime());
+                todosOsItens = await response.json();
+                renderTabs(); renderMenus(); renderGrid(); saveHistory();
+            } catch (e) { console.error("Erro ao carregar"); }
+        }
+
+        function resetAccPositions() {
+            charState = { x: 0, y: 0, s: 1, r: 0, flip: 1 };
+            zone.style.transform = `translate(0,0) scale(1) rotate(0)`;
+            for (let id in accStates) {
+                accStates[id] = { x: 0, y: 0, s: 1, r: 0, flip: 1 };
+                const el = document.getElementById(id + '-container');
+                if(el) el.style.transform = `translate(0,0) scale(1) rotate(0)`;
+            }
+            saveHistory();
+        }
 
         function manualStreakUpdate(val) { streak = parseInt(val) || 0; updateUI(); renderMenus(); renderGrid(); }
         function increaseStreak() { streak++; updateUI(); renderMenus(); renderGrid(); }
